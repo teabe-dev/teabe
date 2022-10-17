@@ -1,6 +1,22 @@
 version: "3.9"
 
 services:
+  db:
+    image: mariadb:10.9.3
+    container_name: teabe_mariadb
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_DATABASE=${PROJECT}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - ~/docker/${PROJECT}/mysql:/var/lib/mysql:rw # 資料庫位置
+      - ~/docker/${PROJECT}/backup:/data # 資料備份使用
+      - ./server/my.cnf:/etc/mysql/my.cnf # 掛載配置文件
+
   web:
     build: .
     container_name: teabe_django
@@ -15,3 +31,5 @@ services:
       - "8000:8000"
     volumes:
       - .:/var/www/html/${PROJECT}
+    depends_on:
+      - db
