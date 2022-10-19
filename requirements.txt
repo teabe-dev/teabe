@@ -6,4 +6,8 @@ uwsgi==2.0.20
 uwsgitop
 
 # config
-decouple
+python-decouple==3.6
+
+# database
+mysqlclient==2.1.0
+PyMySQL==1.0.2
