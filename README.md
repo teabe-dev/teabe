@@ -1,3 +1,1 @@
 # 網頁服務建構中...
-
-docker exec -ti teabe_django /bin/bash

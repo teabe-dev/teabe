@@ -1,3 +1,9 @@
 # django
 django==4.1.2
+
+# server
+uwsgi==2.0.20
+uwsgitop
+
+# config
 decouple
