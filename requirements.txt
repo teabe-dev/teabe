@@ -1,5 +1,6 @@
 # django
 django==4.1.2
+django-allauth==0.51.0
 
 # server
 uwsgi==2.0.20
@@ -21,9 +22,12 @@ redis==4.3.3
 
 # celery
 celery==5.2.7
-django_celery_beat==2.3.0
+django_celery_beat==2.4.0
 flower==1.0.0
 
 # schedule
 tqdm==4.64.0
 rich==12.6.0
+
+# image
+Pillow==9.2.0

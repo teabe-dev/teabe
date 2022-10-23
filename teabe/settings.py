@@ -38,6 +38,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
+
+    'user',
+
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
 ]
 
 MIDDLEWARE = [
@@ -69,6 +76,10 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'teabe.wsgi.application'
+
+
+SITE_ID = 1
+LOGIN_REDIRECT_URL = '/'
 
 
 # Database
