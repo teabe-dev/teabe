@@ -1,7 +1,7 @@
 version: "3.9"
 
 volumes:
-  # nginx_vol:
+  nginx_vol:
   redis_vol:
   rabbitmq_vol:
 
@@ -40,7 +40,7 @@ services:
     environment:
       - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
       - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
-      - RABBITMQ_DEFAULT_VHOST=my_vhost
+      - RABBITMQ_DEFAULT_VHOST=teabe
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -52,13 +52,19 @@ services:
       - sh
       - -c
       - |
-        pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate && uwsgi --emperor server/uwsgi.ini
-    # pip install -r requirements.txt
+        python manage.py collectstatic --noinput && python manage.py migrate && uwsgi --emperor server/uwsgi.ini
+
+    # python manage.py collectstatic --noinput && python manage.py migrate && uwsgi --emperor server/uwsgi.ini
     # python manage.py runserver 0.0.0.0:8000
+    # pip install -r requirements.txt
+    # celery -A teabe beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler &
+    # celery -A teabe flower -l info &
+    # celery -A teabe worker -l INFO
 
     restart: always
     ports:
       - "8000:8000"
+      - "5555:5555"
     volumes:
       - .:/var/www/html/${PROJECT}
     depends_on:

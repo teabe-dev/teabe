@@ -3,7 +3,7 @@ django==4.1.2
 
 # server
 uwsgi==2.0.20
-uwsgitop
+uwsgitop==0.11
 
 # config
 python-decouple==3.6
@@ -12,6 +12,18 @@ python-decouple==3.6
 mysqlclient==2.1.0
 PyMySQL==1.0.2
 
+# data
+pandas==1.4.1
+
 # cache
 django-redis==5.2.0
 redis==4.3.3
+
+# celery
+celery==5.2.7
+django_celery_beat==2.3.0
+flower==1.0.0
+
+# schedule
+tqdm==4.64.0
+rich==12.6.0

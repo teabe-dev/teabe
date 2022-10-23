@@ -1,2 +1,30 @@
+from decouple import config
 
+DEBUG = True
 ALLOWED_HOSTS = []
+
+CELERY_BROKER_URL = 'amqp://USER:PW@rabbitmq:5672/teabe'
+CELERY_RESULT_BACKEND = 'rpc://redis:6379'
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': config('PROJECT'),
+        'USER': config('MYSQL_USER'),
+        'PASSWORD': config('MYSQL_PASSWORD'),
+        'HOST': 'teabe_mariadb',
+        'PORT': '3306',
+        'OPTIONS': {"charset": "utf8mb4"},
+    },
+}
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://teabe_redis:6379/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "PASSWORD": "",
+        },
+    }
+}
