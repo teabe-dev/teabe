@@ -13,8 +13,8 @@ from django.dispatch import receiver
 
 class Index(TemplateView):
     def get(self, request):
-        if request.user.is_anonymous:
-            return HttpResponseRedirect('/accounts/login/')
+        # if request.user.is_anonymous:
+        #     return HttpResponseRedirect('/accounts/login/')
         return render(request, 'base.html')
 
 class AvatarChange(TemplateView):
