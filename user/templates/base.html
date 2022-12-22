@@ -1,0 +1,145 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <meta name="description" content="提比資產管理系統" />
+  <link rel="shortcut icon" type="image/png" href="{% static 'user/img/hm_smile.png' %}">
+  <!-- jquery -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+  <!-- bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.2/font/bootstrap-icons.css">
+  <!-- vue@3 -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+  <link rel="stylesheet" href="{% static 'user/css/navbar.css' %}">
+
+  {% block title %}
+  <title>提比資產管理系統</title>
+  {% endblock title %}
+
+</head>
+
+<body>
+  <div class="container">
+    <nav class="navbar navbar-expand-md bg-light fixed-top">
+      <div class="container-md">
+        <a class="navbar-brand" href="/">
+          提比
+        </a>
+  
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#linkbar">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+  
+        <div class="collapse navbar-collapse" id="linkbar">
+          <ul class="navbar-nav me-auto">
+            <li class="nav-item">
+              <a class="nav-link" href="/share/group">分寶</a>
+            </li>
+          </ul>
+  
+          <div class="d-flex">
+            {% if user.is_authenticated %}
+            <ul class="navbar-nav">
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
+                  aria-expanded="false">
+                  {% if user.userprofile.avatar %}
+                  <img src="{{ user.userprofile.avatar.url }}" class="rounded-pill" style="width: 30px; height: 30px">
+                  {% else %}
+                  <img src="https://secure.gravatar.com/avatar/{{ user.userprofile.user_token.hex }}?s=30&d=identicon"
+                    class="rounded-pill" style="width: 30px; height: 30px">
+                  {% endif %}
+                  {{ user.username }}
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end">
+                  <li><a class="dropdown-item" href="/accounts/password/change/">變更密碼</a></li>
+                  <li><a class="dropdown-item" href="/accounts/email/">信箱驗證</a></li>
+                  <li><a class="dropdown-item" href="/accounts/social/connections/">第三方連結</a></li>
+                  <li>
+                    <hr class="dropdown-divider">
+                  </li>
+                  {% if request.user.is_staff %}
+                  <li><a class="dropdown-item" href="/admin/">後台</a></li>
+                  {% endif %}
+                  <li><a class="dropdown-item" href="/accounts/logout/">登出</a></li>
+                </ul>
+              </li>
+            </ul>
+            {% else %}
+            <a type="button" class="btn btn-outline-primary" href="/accounts/login/">登錄</a>
+            <a type="button" class="btn btn-primary" href="/accounts/signup/">註冊</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+  
+    </nav>
+
+    {% block content %}{% endblock content %}
+  </div>
+
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3"
+    crossorigin="anonymous"></script>
+</body>
+
+
+<script>
+  $(document).ready(function () {
+    $("a[href='" + window.location.pathname + "']").addClass("active");
+  });
+
+
+
+  $(window).resize(function() {
+        var wdth = $(window).width();
+        var mark = sessionStorage.getItem("mark-LR");
+        if (wdth < 768){
+          // 看標記點顯示左還是右
+          if (mark == 'L' | mark == null){
+            $(".left-div").show();
+            $(".right-div").hide();
+          } else {
+            $(".left-div").hide();
+            $(".right-div").show();
+          }
+
+        } else {
+          // 歸位兩邊都顯示
+          $(".left-div").show();
+          $(".right-div").show();
+        }
+    });
+
+    $(".left-button").click(function () {
+      // 左邊按鈕 點擊顯示右邊
+      event.preventDefault() // 取消預設的行為
+      var width = $(window).width();
+      if (width < 768) {
+        $(".left-div").hide()
+        $(".right-div").show();
+        sessionStorage.setItem("mark-LR", "R");
+      }
+    });
+
+    $(".right-button").click(function () {
+      // 右邊按鈕點擊 顯示左邊
+      var width = $(window).width();
+      if (width < 768) {
+        $(".right-div").hide()
+        $(".left-div").show();
+        sessionStorage.setItem("mark-LR", "L");
+      }
+    });
+
+</script>
+
+</html>

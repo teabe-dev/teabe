@@ -1,7 +1,9 @@
 version: "3.9"
 
-# volumes:
-#   nginx_vol:
+volumes:
+  nginx_vol:
+  redis_vol:
+  rabbitmq_vol:
 
 services:
   db:
@@ -16,9 +18,32 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      - ~/docker/${PROJECT}/mysql:/var/lib/mysql:rw # 資料庫位置
-      - ~/docker/${PROJECT}/backup:/data # 資料備份使用
-      - ./server/my.cnf:/etc/mysql/my.cnf # 掛載配置文件
+      - ~/docker/${PROJECT}/mysql:/var/lib/mysql:rw
+      - ~/docker/${PROJECT}/backup:/data
+      - ./server/my.cnf:/etc/mysql/my.cnf
+
+  cache:
+    image: redis:7.0.2
+    container_name: teabe_redis
+    restart: always
+    command: redis-server /etc/redis/redis.conf
+    volumes:
+      - redis_vol:/data
+      - ./server/redis.conf:/etc/redis/redis.conf
+
+  rabbitmq:
+    image: rabbitmq:3.10.5-management
+    container_name: teabe_rabbitmq
+    restart: always
+    volumes:
+      - rabbitmq_vol:/var/lib/rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
+      - RABBITMQ_DEFAULT_VHOST=teabe
+    ports:
+      - "5672:5672"
+      - "15672:15672"
 
   web:
     build: .
@@ -28,28 +53,37 @@ services:
       - -c
       - |
         python manage.py collectstatic --noinput && python manage.py migrate && uwsgi --emperor server/uwsgi.ini
+
+    # python manage.py collectstatic --noinput && python manage.py migrate && uwsgi --emperor server/uwsgi.ini
     # python manage.py runserver 0.0.0.0:8000
+    # pip install -r requirements.txt
+    # celery -A teabe beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler &
+    # celery -A teabe flower -l info &
+    # celery -A teabe worker -l INFO
 
     restart: always
     ports:
       - "8000:8000"
+      - "5555:5555"
     volumes:
       - .:/var/www/html/${PROJECT}
     depends_on:
       - db
+      - cache
+      - rabbitmq
 
-  nginx:  # debug模式 註解
+  nginx:
     build: ./server/.
     container_name: teabe_nginx
     restart: unless-stopped
     env_file:
-      - ./server/nginx-certbot.env # certbot 設定
+      - ./server/nginx-certbot.env
     ports:
       - 80:80
       - 443:443
     volumes:
-      # - nginx_vol:/etc/letsencrypt # 憑證
-      - .:/var/www/html/${PROJECT} # 專案掛載 uwsgi 靜態文件
+      # - nginx_vol:/etc/letsencrypt
+      - .:/var/www/html/${PROJECT}
 
     depends_on:
-      - db
+      - web

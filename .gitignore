@@ -18,3 +18,4 @@ celerybeat-schedule
 nginx-certbot.env
 uwsgi.sock
 nginx.conf
+redis.conf

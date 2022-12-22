@@ -18,7 +18,11 @@ case $VERSION in (*"Python $PY_VERSION"*)
 
 sudo apt install python$PY_VERSION-venv -y
 sudo apt install libpython$PY_VERSION-dev -y
-sudo apt install gcc -y # uwsgi need C
+
+# mysqlclient
+sudo apt install gcc -y
+sudo apt install libmysqlclient-dev -y
+
 
 if [ ! -d "$VENV_DIR" ]; then
     python$PY_VERSION -m venv $VENV_DIR
