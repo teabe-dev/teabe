@@ -86,9 +86,6 @@
   </div>
 
 
-  
-
-
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"
     integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3"
     crossorigin="anonymous"></script>
@@ -101,14 +98,46 @@
   });
 
 
+
   $(window).resize(function() {
-        var wdth=$(window).width();
+        var wdth = $(window).width();
+        var mark = sessionStorage.getItem("mark-LR");
         if (wdth < 768){
+          // 看標記點顯示左還是右
+          if (mark == 'L' | mark == null){
+            $(".left-div").show();
+            $(".right-div").hide();
+          } else {
+            $(".left-div").hide();
+            $(".right-div").show();
+          }
 
         } else {
-          
+          // 歸位兩邊都顯示
+          $(".left-div").show();
+          $(".right-div").show();
         }
-        console.log(wdth)
+    });
+
+    $(".left-button").click(function () {
+      // 左邊按鈕 點擊顯示右邊
+      event.preventDefault() // 取消預設的行為
+      var width = $(window).width();
+      if (width < 768) {
+        $(".left-div").hide()
+        $(".right-div").show();
+        sessionStorage.setItem("mark-LR", "R");
+      }
+    });
+
+    $(".right-button").click(function () {
+      // 右邊按鈕點擊 顯示左邊
+      var width = $(window).width();
+      if (width < 768) {
+        $(".right-div").hide()
+        $(".left-div").show();
+        sessionStorage.setItem("mark-LR", "L");
+      }
     });
 
 </script>
