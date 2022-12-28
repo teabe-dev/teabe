@@ -17,11 +17,8 @@ jobs:
       - run:
           name: Build Docker Image
           command: |
-            docker build -t my-image -f Dockerfile .
-      - run:
-          name: Test
-          # 執行 django 的測試
-          command: |
+            python -m pip install --upgrade pip
+            pip install -r requirements.txt
             python manage.py test
 
 # Invoke jobs via workflows
