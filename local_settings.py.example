@@ -28,3 +28,20 @@ CACHES = {
         },
     }
 }
+
+ACCOUNT_EMAIL_SUBJECT_PREFIX = '提比'
+
+EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False
+
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+# EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend" # 顯示在console測試用
+
+EMAIL_HOST = "smtp-mail.outlook.com"
+# smtp.office365.com smtp.gmail.com smtp-mail.outlook.com
+EMAIL_HOST_USER = "account@teabe.idv.tw"
+EMAIL_HOST_PASSWORD = "password"
+
+EMAIL_PORT = 587
+
+DEFAULT_FROM_EMAIL = "account@teabe.idv.tw"
