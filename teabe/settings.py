@@ -46,6 +46,11 @@ INSTALLED_APPS = [
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
+
+    'allauth.socialaccount.providers.discord',
+    'allauth.socialaccount.providers.google',
+    'allauth.socialaccount.providers.line',
+
 ]
 
 MIDDLEWARE = [
@@ -81,6 +86,25 @@ WSGI_APPLICATION = 'teabe.wsgi.application'
 
 SITE_ID = 1
 LOGIN_REDIRECT_URL = '/'
+
+SOCIALACCOUNT_PROVIDERS = {
+        'line': {
+            "SCOPE": ['profile', 'openid', 'email']
+        }
+    }
+
+
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_AUTHENTICATION_METHOD = 'username_email'
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
+ACCOUNT_EMAIL_CONFIRMATION_HMAC = True
+ACCOUNT_MAX_EMAIL_ADDRESSES = 2
+ACCOUNT_LOGOUT_ON_GET = True
+
+AUTHENTICATION_BACKENDS = (
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend"
+)
 
 
 # Database
