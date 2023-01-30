@@ -7,12 +7,12 @@
 <div class="row">
   <div class="col-12 col-md-3 container-all left-div">
     <div class="list-group list-group-flush border-bottom scrollarea">
-      <a href="http://home.teabe.idv.tw:8000/" class="list-group-item list-group-item-action active py-3 lh-sm left-button" aria-current="true">
+      <a href="#" class="list-group-item list-group-item-action active py-3 lh-sm left-button" aria-current="true">
         <div class="d-flex w-100 align-items-center justify-content-between">
           <strong class="mb-1">個人資訊</strong>
         </div>
       </a>
-      <a href="#" class="list-group-item list-group-item-action py-3 lh-sm left-button">
+      <a href="/share/new_group" class="list-group-item list-group-item-action py-3 lh-sm left-button">
         <div class="d-flex w-100 align-items-center justify-content-between">
           <strong class="mb-1">建立分寶團</strong>
         </div>
@@ -36,7 +36,9 @@
     </div>
 
     <div>
-
+      {% block share_content %}
+      內容
+      {% endblock share_content %}
     </div>
 
   </div>
