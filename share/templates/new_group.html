@@ -1,0 +1,22 @@
+
+
+{% extends "share_base.html" %}
+
+
+{% block share_content %}
+
+
+<form method="post">
+    {% csrf_token %}
+    <div class="form-group">
+        <div class="form-group col-md-12 auto">
+            {{ form }}
+            <br>
+            <input class="btn btn-success" type="submit" value="儲存" />
+        </div>
+    </div>
+</form>
+
+
+
+{% endblock share_content %}

@@ -32,18 +32,18 @@
         <a class="navbar-brand" href="/">
           提比
         </a>
-  
+
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#linkbar">
           <span class="navbar-toggler-icon"></span>
         </button>
-  
+
         <div class="collapse navbar-collapse" id="linkbar">
           <ul class="navbar-nav me-auto">
             <li class="nav-item">
-              <a class="nav-link" href="/share/group">分寶</a>
+              <a class="nav-link" href="/share/">分寶</a>
             </li>
           </ul>
-  
+
           <div class="d-flex">
             {% if user.is_authenticated %}
             <ul class="navbar-nav">
@@ -79,7 +79,7 @@
           </div>
         </div>
       </div>
-  
+
     </nav>
 
     {% block content %}{% endblock content %}
@@ -94,51 +94,55 @@
 
 <script>
   $(document).ready(function () {
-    $("a[href='" + window.location.pathname + "']").addClass("active");
+    // 偵測url並標記點擊
+    // $("a[href='" + window.location.pathname + "']").addClass("active");
+
+    share_resize()
   });
 
+  $(window).resize(share_resize);
 
-
-  $(window).resize(function() {
-        var wdth = $(window).width();
-        var mark = sessionStorage.getItem("mark-LR");
-        if (wdth < 768){
-          // 看標記點顯示左還是右
-          if (mark == 'L' | mark == null){
-            $(".left-div").show();
-            $(".right-div").hide();
-          } else {
-            $(".left-div").hide();
-            $(".right-div").show();
-          }
-
-        } else {
-          // 歸位兩邊都顯示
-          $(".left-div").show();
-          $(".right-div").show();
-        }
-    });
-
-    $(".left-button").click(function () {
-      // 左邊按鈕 點擊顯示右邊
-      event.preventDefault() // 取消預設的行為
-      var width = $(window).width();
-      if (width < 768) {
-        $(".left-div").hide()
-        $(".right-div").show();
-        sessionStorage.setItem("mark-LR", "R");
-      }
-    });
-
-    $(".right-button").click(function () {
-      // 右邊按鈕點擊 顯示左邊
-      var width = $(window).width();
-      if (width < 768) {
-        $(".right-div").hide()
+  function share_resize() {
+    var wdth = $(window).width();
+    var mark = sessionStorage.getItem("mark-LR");
+    console.log(mark)
+    if (wdth < 768) {
+      // 看標記點顯示左還是右
+      if (mark == 'L' | mark == null) {
         $(".left-div").show();
-        sessionStorage.setItem("mark-LR", "L");
+        $(".right-div").hide();
+      } else {
+        $(".left-div").hide();
+        $(".right-div").show();
       }
-    });
+
+    } else {
+      // 歸位兩邊都顯示
+      $(".left-div").show();
+      $(".right-div").show();
+    }
+  }
+
+  $(".left-button").click(function () {
+    // 左邊按鈕 點擊顯示右邊
+    // event.preventDefault() // 取消預設的行為
+    var width = $(window).width();
+    if (width < 768) {
+      $(".left-div").hide()
+      $(".right-div").show();
+      sessionStorage.setItem("mark-LR", "R");
+    }
+  });
+
+  $(".right-button").click(function () {
+    // 右邊按鈕點擊 顯示左邊
+    var width = $(window).width();
+    if (width < 768) {
+      $(".right-div").hide()
+      $(".left-div").show();
+      sessionStorage.setItem("mark-LR", "L");
+    }
+  });
 
 </script>
 
