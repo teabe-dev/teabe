@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-
+{% load share_extras %}
 
 {% block content %}
 
@@ -7,31 +7,44 @@
 <div class="row">
   <div class="col-12 col-md-3 container-all left-div">
     <div class="list-group list-group-flush border-bottom scrollarea">
-      <a href="#" class="list-group-item list-group-item-action active py-3 lh-sm left-button" aria-current="true">
+      <a href="/share/information/" class="list-group-item list-group-item-action py-3 lh-sm left-button
+      {% if '/share/information/' in request.path %}active{% endif %}
+      " aria-current="true">
         <div class="d-flex w-100 align-items-center justify-content-between">
           <strong class="mb-1">個人資訊</strong>
         </div>
+        <div class="col-10 mb-1 small">沒功能XDD</div>
       </a>
-      <a href="/share/new_group" class="list-group-item list-group-item-action py-3 lh-sm left-button">
+      <a href="/share/new_group/" class="list-group-item list-group-item-action py-3 lh-sm left-button
+      {% if '/share/new_group/' in request.path %}active{% endif %}
+      ">
         <div class="d-flex w-100 align-items-center justify-content-between">
           <strong class="mb-1">建立分寶團</strong>
         </div>
       </a>
-      <a href="#" class="list-group-item list-group-item-action py-3 lh-sm left-button">
+      {% for data in share_data %}
+
+      <a href="/share/group/{{ data.share_group.token.hex }}/" class="list-group-item list-group-item-action py-3 lh-sm left-button
+      {% if data.share_group.token.hex in request.path %}active{% endif %}
+      ">
         <div class="d-flex w-100 align-items-center justify-content-between">
-          <strong class="mb-1">分寶團</strong>
+
+          <strong class="mb-1">{{ data.share_group }}</strong>
         </div>
-        <div class="col-10 mb-1 small">簡介</div>
+
+        <div class="col-10 mb-1 small">
+          {{ data.member_type | get_member_role_ch }} {{ data.nick_name }}</div>
       </a>
+      {% endfor %}
     </div>
 
 
   </div>
   <div class="col-sm-12 col-md-9 hide-in-phone container-all right-div">
     <div class="show-in-phone">
-        <button type="button" class="back-btn right-button">
-          <i class="bi bi-chevron-left"></i> 回選單
-        </button>
+      <button type="button" class="back-btn right-button">
+        <i class="bi bi-chevron-left"></i> 回選單
+      </button>
 
     </div>
 
