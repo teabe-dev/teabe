@@ -1,41 +1,6 @@
-from enum import Enum, IntEnum
+from enum import IntEnum
 
-class StrChoiceEnum(str, Enum):
-
-    @classmethod
-    def nameList(cls):
-        return list(map(lambda x: x.name, cls))
-
-    @classmethod
-    def valueList(cls):
-        return list(map(lambda x: x.value, cls))
-
-    @classmethod
-    def choices(cls):
-        return tuple(map(lambda x: (x.value, x.name), cls))
-
-    @classmethod
-    def dictionary(cls):
-        return dict(map(lambda x: x, cls.choices()))
-
-class IntChoiceEnum(IntEnum):
-    @classmethod
-    def nameList(cls):
-        return list(map(lambda x: x.name, cls))
-
-    @classmethod
-    def valueList(cls):
-        return list(map(lambda x: x.value, cls))
-
-    @classmethod
-    def choices(cls):
-        return tuple(map(lambda x: (x.value, x.name), cls))
-
-    @classmethod
-    def dictionary(cls):
-        return dict(map(lambda x: x, cls.choices()))
-
-class MemberRole(IntChoiceEnum):
+class MemberType(IntEnum):
     INVITE = 11    # 邀請中
     AUDIT = 12     # 審核中
     BLOCKADE = 13  # 封鎖中
@@ -45,13 +10,12 @@ class MemberRole(IntChoiceEnum):
 
     @classmethod
     def choices(cls):
-        return tuple(map(lambda x: (x.value, MEMBER_ROLE_MAP[x]), cls))
-
-MEMBER_ROLE_MAP = {
-    MemberRole.INVITE: "邀請中",
-    MemberRole.AUDIT: "審核中",
-    MemberRole.BLOCKADE: "封鎖中",
-    MemberRole.OWNER: "所有者",
-    MemberRole.ADMIN: "管理員",
-    MemberRole.MEMBER: "會員",
-}
+        CHOICES = (
+            (cls.INVITE.value, '邀請中'),
+            (cls.AUDIT.value, '審核中'),
+            (cls.BLOCKADE.value, '封鎖中'),
+            (cls.OWNER.value, '所有者'),
+            (cls.ADMIN.value, '管理員'),
+            (cls.MEMBER.value, '會員'),
+        )
+        return CHOICES
