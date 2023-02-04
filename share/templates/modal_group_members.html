@@ -1,0 +1,65 @@
+<div class="modal-header">
+    <h1 class="modal-title fs-5" id="exampleModalLabel">{{ share_group.title }} 成員</h1>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+<form id="modal_group_members">
+    <div class="modal-body">
+        {% csrf_token %}
+        <div class="row">
+            <div class="col-sm-3">
+                <label class="form-label">帳號</label>
+            </div>
+            <div class="col">
+                <label class="form-label">分寶群暱稱</label>
+            </div>
+            <div class="col">
+                <label class="form-label">權限</label>
+            </div>
+        </div>
+
+        {% for group_member in group_members %}
+        <div class="row">
+            <div class="col-sm-3">
+                <label class="form-label">{{ group_member.user }}</label>
+            </div>
+            <div class="col">
+                <input type="text" class="form-control" maxlength="8" {% if is_edit == False %}disabled{% endif %}
+                placeholder="暱稱" name="form-{{ group_member.id }}-nick_name" value="{{ group_member.nick_name }}">
+            </div>
+            <div class="col">
+                <select id="inputState" class="form-select" {% if group_member.member_type == 21 or is_edit == False %}disabled{% endif %} 
+                name="form-{{ group_member.id }}-member_type">
+                    {% for memberRole in memberRole_choices %}
+                    {% if memberRole.0 != 21 or group_member.member_type == 21 %}
+                    <option value="{{ memberRole.0 }}"{% if memberRole.0 == group_member.member_type %}selected{% endif %}>
+                        {{ memberRole.1 }}
+                    </option>
+                    {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        {% endfor %}
+
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+        {% if is_edit == True %}<input type="submit" class="btn btn-primary" id="form" value="儲存">{% endif %}
+    </div>
+</form>
+
+<script>
+    document.querySelector('form').addEventListener('submit', function (event) {
+        event.preventDefault();
+
+        $.ajax({
+            type: 'post',
+            url: '{{ request.path }}',
+            data: $('#modal_group_members').serialize(),
+            success: function (res) {
+                alert(res['message']);
+            }
+        });
+
+    });
+</script>

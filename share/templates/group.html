@@ -1,17 +1,54 @@
-{% extends "base.html" %}
+{% extends "share_base.html" %}
+{% load share_extras %}
 
-{% block title %}提比 {{ stgConfig.title }}{% endblock %}
 
-{% block content %}
-<h2>{{ stgConfig.title }} <span class="badge bg-secondary">
-    {% if stg_member_self.member_type == 2 %}
-    會員
-    {% elif stg_member_self.member_type == 1 %}
-    管理員
-    {% endif %}</span>
+{% block title %}
+<title>{{ share_group.title }}</title>
+{% endblock title %}
+
+
+
+{% block share_content %}
+
+
+<h2>{{ share_group.title }}
+    <span class="badge rounded-pill text-bg-primary">{{ share_self.member_type | get_member_role_ch }}</span>
 </h2>
-<a href="/share_items/modal_add_item/{{ stgConfig.token.hex }}/" class="show_view_modal">
-    <span class="menu-title">新增</span>
-</a>
 
-{% endblock content %}
+<button type="button" class="btn btn-outline-primary"
+    onclick="text_to_copy('https://{{ request.get_host }}{{ request.path }}')" title="無法複製請直接複製網址">點擊複製分寶(邀請)連結</button>
+
+
+<!-- 互動視窗 紀錄分寶 -->
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content" id="modal_content">
+            <!-- <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Modal title</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                ...
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary">Save changes</button>
+            </div> -->
+        </div>
+    </div>
+</div>
+
+<button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#exampleModal"
+    onclick="set_modal_content('{{ share_self.id }}')">
+    顯示所有成員
+</button>
+
+<button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">
+    新增分寶
+</button>
+
+
+<script>
+</script>
+
+{% endblock share_content %}

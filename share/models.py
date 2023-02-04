@@ -1,8 +1,10 @@
-from django.db import models
 import uuid
-from django.utils import timezone
+
 from django.contrib.auth.models import User
-from share.enums import MemberType
+from django.db import models
+from django.utils import timezone
+
+from share.enums import MemberRole
 
 # Create your models here.
 
@@ -24,7 +26,7 @@ class ShareMember(models.Model):
     share_group = models.ForeignKey(ShareGroup, on_delete=models.CASCADE, verbose_name='分寶群')
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='使用者')
     nick_name = models.CharField(max_length=20, verbose_name='暱稱')
-    member_type = models.IntegerField(choices=MemberType.choices(), default=MemberType.AUDIT, verbose_name='成員類別')
+    member_type = models.IntegerField(choices=MemberRole.choices(), default=MemberRole.AUDIT, verbose_name='成員類別')
 
     class Meta:
         verbose_name = "分寶群成員"
