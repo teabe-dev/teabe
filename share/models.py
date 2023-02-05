@@ -14,6 +14,8 @@ class ShareGroup(models.Model):
     create_time = models.DateTimeField(default=timezone.now, verbose_name='建立時間')
     update_time = models.DateTimeField(default=timezone.now, verbose_name='更新時間')
     is_viewable = models.BooleanField(default=True, verbose_name='可檢視')
+    is_apply = models.BooleanField(default=True, verbose_name='可申請')
+
     class Meta:
         verbose_name = "分寶群"
         verbose_name_plural = "分寶群"

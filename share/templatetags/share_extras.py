@@ -6,4 +6,4 @@ register = template.Library()
 
 @register.filter
 def get_member_role_ch(value):
-    return MEMBER_ROLE_MAP.get(value, '')
+    return MEMBER_ROLE_MAP.get(value, '訪客')
