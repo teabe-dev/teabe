@@ -59,8 +59,8 @@ function text_to_copy(text) {
     });
 }
 
-function set_modal_content(member_id) {
-    $.get(`/share/modal_group_members/${member_id}/`, function (data) {
+function set_modal_content(page, member_id) {
+    $.get(`/share/${page}/${member_id}/`, function (data) {
         $("#modal_content").html(data);
     });
 }

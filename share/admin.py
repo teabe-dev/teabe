@@ -4,7 +4,7 @@ from share import models
 
 @admin.register(models.ShareGroup)
 class ShareGroupAdmin(admin.ModelAdmin):
-    list_display = ('token', 'title', 'create_time', 'update_time', 'is_viewable')
+    list_display = ('token', 'title', 'create_time', 'update_time', 'is_viewable', 'is_apply')
     search_fields = ['is_viewable']  # 搜尋條件
     list_editable = ('title', )
 

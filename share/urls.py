@@ -9,4 +9,5 @@ urlpatterns = [
     re_path(r'information/', views.Information.as_view()),
 
     re_path(r'modal_group_members/(\S+)/$', views.ModalGroupMembers.as_view()),
+    re_path(r'modal_group_join/(\S+)/$', views.JoinGroup.as_view()),
 ]

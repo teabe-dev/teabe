@@ -15,10 +15,6 @@
     <span class="badge rounded-pill text-bg-primary">{{ share_self.member_type | get_member_role_ch }}</span>
 </h2>
 
-<button type="button" class="btn btn-outline-primary"
-    onclick="text_to_copy('https://{{ request.get_host }}{{ request.path }}')" title="無法複製請直接複製網址">點擊複製分寶(邀請)連結</button>
-
-
 <!-- 互動視窗 紀錄分寶 -->
 <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -37,15 +33,37 @@
         </div>
     </div>
 </div>
+<br>
 
+
+
+{% if share_self.member_type >= 21 and share_self.member_type <= 23 %}
+<br>
 <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#exampleModal"
-    onclick="set_modal_content('{{ share_self.id }}')">
+    onclick="set_modal_content('modal_group_members', '{{ share_self.id }}')">
     顯示所有成員
 </button>
+<button type="button" class="btn btn-outline-primary"
+    onclick="text_to_copy('https://{{ request.get_host }}{{ request.path }}')" title="無法複製請直接複製網址">點擊複製分寶(邀請)連結</button>
+<br>
+{% endif %}
 
-<button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">
-    新增分寶
+{% if share_self.member_type == 21 or share_self.member_type == 22 %}
+<br>
+<button type="button" class="btn btn-outline-primary">
+    分寶群設定
 </button>
+<br>
+{% endif %}
+
+{% if not share_self.member_type and share_group.is_apply %}
+<br>
+<button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#exampleModal"
+    onclick="set_modal_content('modal_group_join', '{{ share_group.token }}')">
+    申請加入
+</button>
+<br>
+{% endif %}
 
 
 <script>

@@ -74,15 +74,14 @@ class Group(TemplateView):
         elif share_group[0].is_viewable == False:
             context['message'] = '連結已失效或分寶群未公開'
             return render(request, 'group_error.html', context)
-
-        context['share_self'] = share_self[0]
+        if share_self:
+            context['share_self'] = share_self[0]
         context['is_edit'] = is_edit
         # 要分 參觀模式跟 編輯模式
         return render(request, 'group.html', context)
 
 class ModalGroupMembers(TemplateView):
     def get(self, request, member_id):
-        is_edit = False
         shareMembers = ShareMember.objects.filter(id=int(member_id))
         if shareMembers.exists() == False:
             return render(request, 'modal_group_error.html', {'message': '參數錯誤'})
@@ -90,6 +89,10 @@ class ModalGroupMembers(TemplateView):
 
         if shareMember.member_type in [MemberRole.ADMIN, MemberRole.OWNER]:
             is_edit = True
+        elif shareMember.member_type == MemberRole.MEMBER:
+            is_edit = False
+        else:
+            return render(request, 'modal_group_error.html', {'message': '無權限'})
 
         group_members = shareMember.share_group.sharemember_set.all()
 
@@ -148,3 +151,36 @@ class ModalGroupMembers(TemplateView):
 
         ShareMember.objects.bulk_update(group_member_dict.values(), fields=['nick_name', 'member_type'])
         return JsonResponse({'message': '變更成功'})
+
+class JoinGroup(TemplateView):
+    def get(self, request, token):
+        form = csrfForm()
+        share_groups = ShareGroup.objects.filter(token=token)
+        if share_groups.exists() == False:
+            return render(request, 'modal_group_error.html', {'message': '參數錯誤'})
+        share_group = share_groups[0]
+
+        return render(request, 'modal_group_join.html', {
+            'share_group': share_group,
+            'form': form})
+
+
+    def post(self, request, token):
+        form = csrfForm(request.POST)
+        if form.is_valid() == False:
+            return JsonResponse({'message': '表單已失效，請重新整理。'})
+
+        nick_name = request.POST.get('nick_name', request.user.username)
+        share_groups = ShareGroup.objects.filter(token=token)
+        if share_groups.exists() == False:
+            return JsonResponse({'message': '申請失敗'})
+        share_group:ShareGroup = share_groups[0]
+
+        if share_group.is_viewable and share_group.is_apply:
+            share_members = share_group.sharemember_set.filter(user=request.user)
+            if share_members.exists():
+                return JsonResponse({'message': '已申請'})
+
+            ShareMember.objects.create(share_group=share_group, user=request.user, nick_name=nick_name)
+            return JsonResponse({'message': '申請成功'})
+        return JsonResponse({'message': '申請失敗'})

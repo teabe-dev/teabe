@@ -1,0 +1,37 @@
+<div class="modal-header">
+    <h1 class="modal-title fs-5" id="exampleModalLabel">申請加入{{ share_group.title }}</h1>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+<form id="modal_group_members">
+    <div class="modal-body">
+        {% csrf_token %}
+
+        <div class="mb-3">
+            <label for="nick_name" class="form-label">暱稱</label>
+            <input type="text" class="form-control" id="nick_name" name="nick_name" placeholder="提比醬">
+        </div>
+
+
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+        <input type="submit" class="btn btn-primary" id="form" value="儲存">
+    </div>
+</form>
+
+<script>
+    document.querySelector('form').addEventListener('submit', function (event) {
+        event.preventDefault();
+
+        $.ajax({
+            type: 'post',
+            url: '{{ request.path }}',
+            data: $('#modal_group_members').serialize(),
+            success: function (res) {
+                alert(res['message']);
+                location.reload()
+            }
+        });
+
+    });
+</script>
