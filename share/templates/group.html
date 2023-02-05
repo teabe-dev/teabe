@@ -50,13 +50,14 @@
 
 {% if share_self.member_type == 21 or share_self.member_type == 22 %}
 <br>
-<button type="button" class="btn btn-outline-primary">
+<button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#exampleModal"
+    onclick="set_modal_content('modal_group_admin', '{{ share_self.id }}')">
     分寶群設定
 </button>
 <br>
 {% endif %}
 
-{% if not share_self.member_type and share_group.is_apply %}
+{% if not share_self.member_type and share_group.is_apply or share_self.member_type == 12 %}
 <br>
 <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#exampleModal"
     onclick="set_modal_content('modal_group_join', '{{ share_group.token }}')">
