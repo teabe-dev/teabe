@@ -1,15 +1,20 @@
 import uuid
+import zoneinfo
 
+from django.conf import settings
 from django.forms import formset_factory, modelformset_factory
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import render
 from django.template import RequestContext
+from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from django.views.generic import TemplateView, View
 
 from share.enums import MemberRole
 from share.forms import GroupCreateForm, csrfForm
-from share.models import ShareGroup, ShareMember
-from django.utils import timezone
+from share.models import ShareGroup, ShareMember, UserDetail
+
+paris_tz = zoneinfo.ZoneInfo(settings.TIME_ZONE)
 # Create your views here.
 
 class Share(TemplateView):
@@ -24,6 +29,53 @@ class Information(TemplateView):
     def get(self, request):
         share_options = ShareMember.objects.filter(user=request.user, member_type__lt=40)
         return render(request, 'information.html', {'share_options': share_options})
+
+    def post(self, request):
+        userDetails = UserDetail.objects.filter(user=request.user)
+        result = []
+        for userDetail in userDetails:
+            userDetail:UserDetail
+            receipt_data = {
+                'id': userDetail.id,
+                'item': userDetail.item,
+                "price": format(userDetail.price, ','),
+                'share_group': userDetail.share_group_detail.title if userDetail.share_group_detail else '',
+                'remark': userDetail.remark,
+                'getting_time': userDetail.getting_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d %H:%M'),
+                'create_time': userDetail.create_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d %H:%M'),
+            }
+            result.append(receipt_data)
+        return JsonResponse({'result': result})
+
+class ModalAddItam(TemplateView):
+    def get(self, request):
+        form = csrfForm()
+        return render(request, 'modal_add_item.html', {'form': form})
+
+    def post(self, request):
+        # TODO 修改刪除功能 + 能單筆給前端處理
+        form = csrfForm(request.POST)
+        if form.is_valid() == False:
+            return JsonResponse({'message': '表單已失效，請重新整理。'})
+
+        post_data:dict = request.POST.dict()
+
+        create_date = post_data.get('create_date', '')
+        create_time = post_data.get('create_time', '')
+
+        getting_time = parse_datetime(f"{create_date} {create_time}")
+        getting_time = getting_time.replace(tzinfo=paris_tz)
+
+        UserDetail.objects.create(
+            user=request.user, 
+            item=post_data.get('item', ''),
+            price=int(post_data.get('price', 0)),
+            remark=post_data.get('remark', ''),
+            getting_time=getting_time,
+            )
+
+        return JsonResponse({'message': '新增成功'})
+
 
 
 class GroupCreate(TemplateView):

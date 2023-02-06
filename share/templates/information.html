@@ -4,7 +4,99 @@
 
 
 {% block share_content %}
+<!-- 互動視窗 紀錄分寶 -->
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content" id="modal_content">
+            <!-- <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Modal title</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                ...
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary">Save changes</button>
+            </div> -->
+        </div>
+    </div>
+</div>
 
-<h1>個人資訊還在開發中，請先回選單選擇其他功能</h1>
+<button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#exampleModal"
+    onclick="set_modal_content('modal_add_item')">
+    新增分寶
+</button>
+<br><br>
+
+{% csrf_token %}
+<table id="myTable" class="display" style="width:100%">
+    <thead>
+        <tr>
+            <th>項目</th>
+            <th>金額</th>
+            <th>分寶團</th>
+            <th>備註</th>
+            <th>取得日期</th>
+            <th>建立日期</th>
+            <th>選項</th>
+        </tr>
+    </thead>
+</table>
+
+
+<script>
+    var columns = [
+        { "data": "item"},
+        { "data": "price" },
+        { "data": "share_group" },
+        { "data": "remark" },
+        { "data": "getting_time" },
+        { "data": "create_time" },
+        {
+            "targets": -1,
+            "data": null,
+            "defaultContent": `
+            <button type="button" class="btn btn-outline-primary btn-sm" onclick="modify_table(this)">修改</button>
+            `
+        },
+    ]
+
+
+    $(document).ready( function () {
+        $.ajax({
+            url: '',
+            type: 'POST',
+            dataType: 'json',
+            headers: { "X-CSRFToken": $("input[name='csrfmiddlewaretoken']").val() },
+            success: function (data) {
+                var myTable = $('#myTable').DataTable({
+                    'language': language,
+                    'data': data.result,
+                    'columns': columns,
+                    "order": [[4, "desc"]],
+                });
+                change_size()
+
+            }
+        });
+    });
+
+    $(window).resize(change_size);
+
+    function change_size () {
+        var wdth = $(window).width();
+        if (wdth < 768) {
+            var table = $('#myTable').DataTable();
+            table.column(3).visible(false);
+            table.column(5).visible(false);
+        } else {
+            var table = $('#myTable').DataTable();
+            table.column(3).visible(false);
+            table.column(5).visible(true);
+        }}
+
+</script>
+
 
 {% endblock share_content %}
