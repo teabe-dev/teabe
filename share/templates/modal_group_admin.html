@@ -1,0 +1,61 @@
+<div class="modal-header">
+    <h1 class="modal-title fs-5" id="exampleModalLabel">申請加入{{ share_group.title }}</h1>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+<form id="modal_group_members">
+    <div class="modal-body">
+        {% csrf_token %}
+
+        <div class="mb-3">
+            <label for="title" class="form-label">分寶群名稱</label>
+            <input type="text" class="form-control" id="title" name="title" value="{{ share_group.title }}" placeholder="提比小幫手">
+        </div>
+
+
+        <div class="mb-3">
+            <input class="form-check-input" type="checkbox" value="" id="change_token" name="change_token">
+            <label class="form-check-label" for="change_token">
+                變更連結
+            </label>
+        </div>
+        <div class="mb-3">
+            <input class="form-check-input" type="checkbox" value="" id="is_viewable" name="is_viewable"
+            {% if share_group.is_viewable %}checked{% endif %}>
+            <label class="form-check-label" for="is_viewable">
+                可檢視
+            </label>
+        </div>
+        <div class="mb-3">
+            <input class="form-check-input" type="checkbox" value="" id="is_apply" name="is_apply"
+            {% if share_group.is_apply %}checked{% endif %}>
+            <label class="form-check-label" for="is_apply">
+                可申請
+            </label>
+        </div>
+
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+        <input type="submit" class="btn btn-primary" id="form" value="儲存">
+    </div>
+</form>
+
+<script>
+    document.querySelector('form').addEventListener('submit', function (event) {
+        event.preventDefault();
+
+        $.ajax({
+            type: 'post',
+            url: '{{ request.path }}',
+            data: $('#modal_group_members').serialize(),
+            success: function (res) {
+                alert(res['message']);
+                if (res['url']){
+                    window.location = res['url'];
+                } else {
+                    location.reload()
+                }
+            }
+        });
+    });
+</script>

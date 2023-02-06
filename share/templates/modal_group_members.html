@@ -26,14 +26,20 @@
                 <input type="text" class="form-control" maxlength="8" {% if is_edit == False %}disabled{% endif %}
                 placeholder="暱稱" name="form-{{ group_member.id }}-nick_name" value="{{ group_member.nick_name }}">
             </div>
+
             <div class="col">
-                <select id="inputState" class="form-select" {% if group_member.member_type == 21 or is_edit == False %}disabled{% endif %} 
+                <select id="inputState" class="form-select" 
+                {% if group_member.member_type == 21 or is_edit == False or share_self.member_type == 22 and group_member.member_type == 22 %}
+                disabled
+                {% endif %} 
                 name="form-{{ group_member.id }}-member_type">
                     {% for memberRole in memberRole_choices %}
                     {% if memberRole.0 != 21 or group_member.member_type == 21 %}
+                    {% if memberRole.0 != 22 or group_member.member_type == 22 %}
                     <option value="{{ memberRole.0 }}"{% if memberRole.0 == group_member.member_type %}selected{% endif %}>
                         {{ memberRole.1 }}
                     </option>
+                    {% endif %}
                     {% endif %}
                     {% endfor %}
                 </select>

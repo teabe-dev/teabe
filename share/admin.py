@@ -16,21 +16,21 @@ class ShareMemberAdmin(admin.ModelAdmin):
 
 @admin.register(models.ShareGroupDetail)
 class ShareGroupDetailAdmin(admin.ModelAdmin):
-    list_display = ('share_group', 'item', 'set_user', 'get_user', 'create_time', 'update_time')
+    list_display = ('share_group', 'item', 'set_user', 'get_user', 'getting_time', 'create_time', 'update_time')
     search_fields = ['share_group', 'item']  # 搜尋條件
     raw_id_fields = ('share_group', 'set_user', 'get_user')
     filter_horizontal = ('share_user', )
 
 @admin.register(models.ShareGroupHistory)
 class ShareGroupHistoryAdmin(admin.ModelAdmin):
-    list_display = ('share_group_detail', 'item', 'set_user', 'get_user', 'create_time')
+    list_display = ('share_group_detail', 'item', 'set_user', 'get_user', 'getting_time', 'create_time')
     search_fields = ['share_group', 'item']  # 搜尋條件
     raw_id_fields = ('set_user', 'get_user',)
     filter_horizontal = ('share_user', )
 
 @admin.register(models.UserDetail)
 class UserDetailAdmin(admin.ModelAdmin):
-    list_display = ('user', 'item', 'price', 'remark')
+    list_display = ('user', 'item', 'price', 'remark', 'getting_time')
     search_fields = ['user', 'item']  # 搜尋條件
     raw_id_fields = ('user',)
 

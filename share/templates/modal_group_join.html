@@ -8,21 +8,23 @@
 
         <div class="mb-3">
             <label for="nick_name" class="form-label">暱稱</label>
-            <input type="text" class="form-control" id="nick_name" name="nick_name" placeholder="提比醬">
+            <input type="text" class="form-control" id="nick_name" name="nick_name" placeholder="提比醬" value="{{ share_member.nick_name }}">
         </div>
 
 
     </div>
     <div class="modal-footer">
+        {% if share_group %}
+        <button type="button" class="btn btn-danger" onclick="del()">取消申請</button>
+        {% endif %}
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
-        <input type="submit" class="btn btn-primary" id="form" value="儲存">
+        <button type="button" class="btn btn-primary" onclick="save()">儲存</button>
     </div>
 </form>
 
 <script>
-    document.querySelector('form').addEventListener('submit', function (event) {
-        event.preventDefault();
 
+    function save () {
         $.ajax({
             type: 'post',
             url: '{{ request.path }}',
@@ -32,6 +34,18 @@
                 location.reload()
             }
         });
+    }
+    function del () {
+        $.ajax({
+            type: 'post',
+            url: '{{ request.path }}',
+            data: $('#modal_group_members').serialize() + '&del=',
+            success: function (res) {
+                alert(res['message']);
+                location.reload()
+            }
+        });
+    }
 
-    });
+
 </script>

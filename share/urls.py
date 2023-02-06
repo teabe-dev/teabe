@@ -9,5 +9,10 @@ urlpatterns = [
     re_path(r'information/', views.Information.as_view()),
 
     re_path(r'modal_group_members/(\S+)/$', views.ModalGroupMembers.as_view()),
-    re_path(r'modal_group_join/(\S+)/$', views.JoinGroup.as_view()),
+    re_path(r'modal_group_join/(\S+)/$', views.ModalGroupJoin.as_view()),
+    re_path(r'modal_group_admin/(\S+)/$', views.ModalGroupAdmin.as_view()),
+
+    re_path(r'modal_add_item/', views.ModalAddItam.as_view()),
 ]
+
+
