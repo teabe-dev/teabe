@@ -2,7 +2,7 @@
     <h1 class="modal-title fs-5" id="exampleModalLabel">申請加入{{ share_group.title }}</h1>
     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 </div>
-<form id="modal_group_members">
+<form id="modal_form">
     <div class="modal-body">
         {% csrf_token %}
 
@@ -18,28 +18,29 @@
         <button type="button" class="btn btn-danger" onclick="del()">取消申請</button>
         {% endif %}
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
-        <button type="button" class="btn btn-primary" onclick="save()">儲存</button>
+        <input type="submit" class="btn btn-primary" id="form" value="儲存">
     </div>
 </form>
 
 <script>
-
-    function save () {
+    document.querySelector('form').addEventListener('submit', function (event) {
+        event.preventDefault();
         $.ajax({
             type: 'post',
             url: '{{ request.path }}',
-            data: $('#modal_group_members').serialize(),
+            data: $('#modal_form').serialize(),
             success: function (res) {
                 alert(res['message']);
                 location.reload()
             }
         });
-    }
+    })
+
     function del () {
         $.ajax({
             type: 'post',
             url: '{{ request.path }}',
-            data: $('#modal_group_members').serialize() + '&del=',
+            data: $('#modal_form').serialize() + '&del=',
             success: function (res) {
                 alert(res['message']);
                 location.reload()

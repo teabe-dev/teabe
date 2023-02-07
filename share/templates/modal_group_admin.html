@@ -2,7 +2,7 @@
     <h1 class="modal-title fs-5" id="exampleModalLabel">申請加入{{ share_group.title }}</h1>
     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 </div>
-<form id="modal_group_members">
+<form id="modal_form">
     <div class="modal-body">
         {% csrf_token %}
 
@@ -47,7 +47,7 @@
         $.ajax({
             type: 'post',
             url: '{{ request.path }}',
-            data: $('#modal_group_members').serialize(),
+            data: $('#modal_form').serialize(),
             success: function (res) {
                 alert(res['message']);
                 if (res['url']){

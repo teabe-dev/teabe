@@ -30,7 +30,7 @@ class ShareGroupHistoryAdmin(admin.ModelAdmin):
 
 @admin.register(models.UserDetail)
 class UserDetailAdmin(admin.ModelAdmin):
-    list_display = ('user', 'item', 'price', 'remark', 'getting_time')
+    list_display = ('user', 'item', 'price', 'share_group_detail', 'remark', 'getting_time')
     search_fields = ['user', 'item']  # 搜尋條件
     raw_id_fields = ('user',)
 

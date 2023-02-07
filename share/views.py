@@ -48,11 +48,17 @@ class Information(TemplateView):
         return JsonResponse({'result': result})
 
 class ModalAddItam(TemplateView):
-    def get(self, request):
+    def get(self, request, detail_id):
         form = csrfForm()
-        return render(request, 'modal_add_item.html', {'form': form})
+        if detail_id == 'new':
+            return render(request, 'modal_add_item.html', {'form': form, 'title': '新增項目'})
+        try:
+            userDetail = UserDetail.objects.get(id=int(detail_id), user=request.user)
+        except:
+            return render(request, 'modal_group_error.html', {'message': '參數錯誤'})
+        return render(request, 'modal_add_item.html', {'form': form, 'userDetail': userDetail, 'title': '修改項目'})
 
-    def post(self, request):
+    def post(self, request, detail_id):
         # TODO 修改刪除功能 + 能單筆給前端處理
         form = csrfForm(request.POST)
         if form.is_valid() == False:
@@ -66,15 +72,66 @@ class ModalAddItam(TemplateView):
         getting_time = parse_datetime(f"{create_date} {create_time}")
         getting_time = getting_time.replace(tzinfo=paris_tz)
 
-        UserDetail.objects.create(
-            user=request.user, 
-            item=post_data.get('item', ''),
-            price=int(post_data.get('price', 0)),
-            remark=post_data.get('remark', ''),
-            getting_time=getting_time,
-            )
+        if detail_id == 'new':
+            userDetail = UserDetail.objects.create(
+                user=request.user, 
+                item=post_data.get('item', ''),
+                price=int(post_data.get('price', 0) if post_data.get('price', '') != '' else 0),
+                remark=post_data.get('remark', ''),
+                getting_time=getting_time,
+                )
 
-        return JsonResponse({'message': '新增成功'})
+            receipt_data = {
+                'id': userDetail.id,
+                'item': userDetail.item,
+                "price": format(userDetail.price, ','),
+                'share_group': userDetail.share_group_detail.title if userDetail.share_group_detail else '',
+                'remark': userDetail.remark,
+                'getting_time': userDetail.getting_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d %H:%M'),
+                'create_time': userDetail.create_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d %H:%M'),
+            }
+
+            return JsonResponse({'message': '新增成功', 'receipt_data': receipt_data})
+
+        try:
+            userDetail = UserDetail.objects.get(id=int(detail_id), user=request.user)
+            if 'del' in request.POST:
+                userDetail.delete()
+                receipt_data = {'id': int(detail_id),}
+                return JsonResponse({'message': '刪除成功', 'receipt_data': receipt_data})
+
+            userDetail.item = post_data.get('item', '')
+            userDetail.price = int(post_data.get('price', 0) if post_data.get('price', '') != '' else 0)
+            userDetail.remark = post_data.get('remark', '')
+            userDetail.getting_time = getting_time
+            userDetail.save()
+
+            receipt_data = {
+                'id': userDetail.id,
+                'item': userDetail.item,
+                "price": format(userDetail.price, ','),
+                'share_group': userDetail.share_group_detail.title if userDetail.share_group_detail else '',
+                'remark': userDetail.remark,
+                'getting_time': userDetail.getting_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d %H:%M'),
+                'create_time': userDetail.create_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d %H:%M'),
+            }
+
+            return JsonResponse({'message': '更新成功', 'receipt_data': receipt_data})
+
+        except:
+            return render(request, 'modal_group_error.html', {'message': '參數錯誤'})
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
