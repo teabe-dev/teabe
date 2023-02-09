@@ -1,73 +1,103 @@
 <div class="modal-header">
-    <h1 class="modal-title fs-5" id="exampleModalLabel">新增道具</h1>
+    <h1 class="modal-title fs-5" id="exampleModalLabel">{{ title }}</h1>
     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 </div>
-<form id="modal_group_members">
+<form id="modal_form">
     <div class="modal-body">
         {% csrf_token %}
 
         <div class="mb-3">
             <label for="item" class="form-label">項目：</label>
-            <input type="text" class="form-control" id="item" name="item" placeholder="米列希安們" value="">
+            <input type="text" class="form-control" id="item" name="item" placeholder="米列希安們" value="{{ userDetail.item }}" required>
         </div>
 
         <div class="mb-3">
             <label for="price" class="form-label">金額：</label>
-            <input type="number" class="form-control" id="price" name="price" placeholder="0" value="">
+            <input type="number" class="form-control" id="price" name="price" placeholder="0" value="{{ userDetail.price }}">
         </div>
 
         <div class="mb-3">
             <label for="remark" class="form-label">備註：</label>
-            <input type="text" class="form-control" id="remark" name="remark" placeholder="" value="">
+            <input type="text" class="form-control" id="remark" name="remark" placeholder="" value="{{ userDetail.remark }}">
         </div>
 
         <div class="mb-3">
             <label class="form-label">取得時間：</label>
-
             <div class="row">
+                {% if userDetail.getting_time %}
                 <div class="col">
-                    <input type="date" class="form-control" name="create_date" placeholder="" value="{% now 'Y-m-d' %}">
+                    <input type="date" class="form-control" name="create_date" placeholder="" value="{{ userDetail.getting_time | date:'Y-m-d' }}" required>
                 </div>
                 <div class="col">
-                    <input type="time" class="form-control" name="create_time" placeholder="" value="{% now 'H:m' %}">
+                    <input type="time" class="form-control" name="create_time" placeholder="" value="{{ userDetail.getting_time | time:'H:i' }}" required>
                 </div>
+                {% else %}
+                <div class="col">
+                    <input type="date" class="form-control" name="create_date" placeholder="" value="{% now 'Y-m-d' %}" required>
+                </div>
+                <div class="col">
+                    <input type="time" class="form-control" name="create_time" placeholder="" value="{% now 'H:i' %}" required>
+                </div>
+                {% endif %}
             </div>
         </div>
-
-
     </div>
     <div class="modal-footer">
-        {% if share_group %}
+        {% if userDetail %}
         <button type="button" class="btn btn-danger" onclick="del()">刪除</button>
         {% endif %}
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
-        <button type="button" class="btn btn-primary" onclick="save()">儲存</button>
+        <input type="submit" class="btn btn-primary" id="form" value="儲存">
     </div>
 </form>
 
 <script>
+    document.querySelector('form').addEventListener('submit', function (event) {
+        event.preventDefault();
+        $.ajax({
+            type: 'post',
+            url: '{{ request.path }}',
+            data: $('#modal_form').serialize(),
+            success: function (res) {
+                // 修改表格
+                if (res['message'] === '新增成功'){
+                    var table = $('#myTable').DataTable();
+                    table.row.add(res['receipt_data']).draw();
+                } else if (res['message'] === '更新成功') {
+                    var table = $('#myTable').DataTable();
 
-    function save () {
-        $.ajax({
-            type: 'post',
-            url: '{{ request.path }}',
-            data: $('#modal_group_members').serialize(),
-            success: function (res) {
+                    var rows = table.rows(function(idx, data, node) {
+                        return data.id === res['receipt_data']['id'];
+                    });
+                    table.row(rows.indexes().toArray()[0]).remove().draw();
+
+                    table.row.add(res['receipt_data']).draw();
+                }
                 alert(res['message']);
-                // location.reload()
+                $('#exampleModal').modal('hide')
             }
         });
-    }
+    });
+
     function del () {
-        $.ajax({
+        if (confirm('確定要刪除嗎?')) {
+            $.ajax({
             type: 'post',
             url: '{{ request.path }}',
-            data: $('#modal_group_members').serialize() + '&del=',
+            data: $('#modal_form').serialize() + '&del=',
             success: function (res) {
+                // 修改表格
+                var table = $('#myTable').DataTable();
+                var rows = table.rows(function(idx, data, node) {
+                    return data.id === res['receipt_data']['id'];
+                    });
+                table.row(rows.indexes().toArray()[0]).remove().draw();
+
                 alert(res['message']);
-                location.reload()
+                $('#exampleModal').modal('hide')
             }
         });
+            }
     }
 
 

@@ -24,8 +24,8 @@
 </div>
 
 <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#exampleModal"
-    onclick="set_modal_content('modal_add_item')">
-    新增分寶
+    onclick="set_modal_content('modal_add_item/new')">
+    新增紀錄
 </button>
 <br><br>
 
@@ -39,13 +39,20 @@
             <th>備註</th>
             <th>取得日期</th>
             <th>建立日期</th>
-            <th>選項</th>
+            <th>操作</th>
         </tr>
     </thead>
 </table>
 
 
 <script>
+
+    function modify_modal_table(this_button){
+        var table = $('#myTable').DataTable();
+        var data = table.row($(this_button).parents('tr')).data();
+        set_modal_content(`modal_add_item/${data.id}`)
+    }
+
     var columns = [
         { "data": "item"},
         { "data": "price" },
@@ -57,11 +64,20 @@
             "targets": -1,
             "data": null,
             "defaultContent": `
-            <button type="button" class="btn btn-outline-primary btn-sm" onclick="modify_table(this)">修改</button>
+            <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#exampleModal" onclick="modify_modal_table(this)">修改</button>
             `
         },
     ]
-
+    var columnDefs = [{
+        "targets": 6,
+        "orderable": false,
+        "render": function(data, type, row) {
+            if (row.share_group != "") {
+                return "";
+            } else {
+                return data;
+            }}
+        }]
 
     $(document).ready( function () {
         $.ajax({
@@ -74,10 +90,10 @@
                     'language': language,
                     'data': data.result,
                     'columns': columns,
+                    'columnDefs': columnDefs,
                     "order": [[4, "desc"]],
                 });
                 change_size()
-
             }
         });
     });
@@ -92,9 +108,10 @@
             table.column(5).visible(false);
         } else {
             var table = $('#myTable').DataTable();
-            table.column(3).visible(false);
+            table.column(3).visible(true);
             table.column(5).visible(true);
-        }}
+        }
+    }
 
 </script>
 

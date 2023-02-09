@@ -12,7 +12,7 @@ from django.views.generic import TemplateView, View
 
 from share.enums import MemberRole
 from share.forms import GroupCreateForm, csrfForm
-from share.models import ShareGroup, ShareMember, UserDetail
+from share.models import ShareGroup, ShareMember, UserDetail, ShareGroupDetail, ShareGroupHistory
 
 paris_tz = zoneinfo.ZoneInfo(settings.TIME_ZONE)
 # Create your views here.
@@ -20,13 +20,15 @@ paris_tz = zoneinfo.ZoneInfo(settings.TIME_ZONE)
 class Share(TemplateView):
     def get(self, request):
         if request.user.is_anonymous:
-            return HttpResponseRedirect('/accounts/login/')
+            return HttpResponseRedirect(f'/accounts/login/?next={request.path}')
         share_options = ShareMember.objects.filter(user=request.user, member_type__lt=40)
         return render(request, 'share_base.html', {'share_options': share_options})
 
 
 class Information(TemplateView):
     def get(self, request):
+        if request.user.is_anonymous:
+            return HttpResponseRedirect(f'/accounts/login/?next={request.path}')
         share_options = ShareMember.objects.filter(user=request.user, member_type__lt=40)
         return render(request, 'information.html', {'share_options': share_options})
 
@@ -48,12 +50,17 @@ class Information(TemplateView):
         return JsonResponse({'result': result})
 
 class ModalAddItam(TemplateView):
-    def get(self, request):
+    def get(self, request, detail_id):
         form = csrfForm()
-        return render(request, 'modal_add_item.html', {'form': form})
+        if detail_id == 'new':
+            return render(request, 'modal_add_item.html', {'form': form, 'title': '新增項目'})
+        try:
+            userDetail = UserDetail.objects.get(id=int(detail_id), user=request.user)
+        except:
+            return render(request, 'modal_group_error.html', {'message': '參數錯誤'})
+        return render(request, 'modal_add_item.html', {'form': form, 'userDetail': userDetail, 'title': '修改項目'})
 
-    def post(self, request):
-        # TODO 修改刪除功能 + 能單筆給前端處理
+    def post(self, request, detail_id):
         form = csrfForm(request.POST)
         if form.is_valid() == False:
             return JsonResponse({'message': '表單已失效，請重新整理。'})
@@ -66,22 +73,60 @@ class ModalAddItam(TemplateView):
         getting_time = parse_datetime(f"{create_date} {create_time}")
         getting_time = getting_time.replace(tzinfo=paris_tz)
 
-        UserDetail.objects.create(
-            user=request.user, 
-            item=post_data.get('item', ''),
-            price=int(post_data.get('price', 0)),
-            remark=post_data.get('remark', ''),
-            getting_time=getting_time,
-            )
+        if detail_id == 'new':
+            userDetail = UserDetail.objects.create(
+                user=request.user, 
+                item=post_data.get('item', ''),
+                price=int(post_data.get('price', 0) if post_data.get('price', '') != '' else 0),
+                remark=post_data.get('remark', ''),
+                getting_time=getting_time,
+                )
 
-        return JsonResponse({'message': '新增成功'})
+            receipt_data = {
+                'id': userDetail.id,
+                'item': userDetail.item,
+                "price": format(userDetail.price, ','),
+                'share_group': userDetail.share_group_detail.title if userDetail.share_group_detail else '',
+                'remark': userDetail.remark,
+                'getting_time': userDetail.getting_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d %H:%M'),
+                'create_time': userDetail.create_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d %H:%M'),
+            }
 
+            return JsonResponse({'message': '新增成功', 'receipt_data': receipt_data})
+
+        try:
+            userDetail = UserDetail.objects.get(id=int(detail_id), user=request.user)
+            if 'del' in request.POST:
+                userDetail.delete()
+                receipt_data = {'id': int(detail_id),}
+                return JsonResponse({'message': '刪除成功', 'receipt_data': receipt_data})
+
+            userDetail.item = post_data.get('item', '')
+            userDetail.price = int(post_data.get('price', 0) if post_data.get('price', '') != '' else 0)
+            userDetail.remark = post_data.get('remark', '')
+            userDetail.getting_time = getting_time
+            userDetail.save()
+
+            receipt_data = {
+                'id': userDetail.id,
+                'item': userDetail.item,
+                "price": format(userDetail.price, ','),
+                'share_group': userDetail.share_group_detail.title if userDetail.share_group_detail else '',
+                'remark': userDetail.remark,
+                'getting_time': userDetail.getting_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d %H:%M'),
+                'create_time': userDetail.create_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d %H:%M'),
+            }
+
+            return JsonResponse({'message': '更新成功', 'receipt_data': receipt_data})
+
+        except:
+            return JsonResponse({'message': '參數錯誤'})
 
 
 class GroupCreate(TemplateView):
     def get(self, request):
         if request.user.is_anonymous:
-            return HttpResponseRedirect('/accounts/login/')
+            return HttpResponseRedirect(f'/accounts/login/?next={request.path}')
 
         form = GroupCreateForm()
         share_options = ShareMember.objects.filter(user=request.user, member_type__lt=40)
@@ -103,6 +148,9 @@ class GroupCreate(TemplateView):
 
 class Group(TemplateView):
     def get(self, request, token):
+        if request.user.is_anonymous:
+            return HttpResponseRedirect(f'/accounts/login/?next={request.path}')
+
         share_options = ShareMember.objects.filter(user=request.user, member_type__lt=40)
         context = {
             'share_options': share_options
@@ -157,7 +205,6 @@ class ModalGroupMembers(TemplateView):
         # return render(request, 'modal_group_members.html', {
         #     'formset': bb})
 
-        # TODO 可在前端顯示成員列表並可編輯
         return render(request, 'modal_group_members.html', {
             'share_self': shareMember,
             'share_group': shareMember.share_group,
@@ -221,10 +268,10 @@ class ModalGroupJoin(TemplateView):
         share_members = share_group.sharemember_set.filter(user=request.user)
         if share_members.exists():
             share_member = share_members[0]
-            if share_member.member_type == MemberRole.AUDIT:
-                data['share_member'] = share_member
+            if share_member.member_type == MemberRole.BLOCKADE:
+                return render(request, 'modal_group_error.html', {'message': '參數錯誤'})
             else:
-                return render(request, 'modal_group_error.html', {'message': '權限已變更，請重新整理頁面'})
+                data['share_member'] = share_member
         return render(request, 'modal_group_join.html', data)
 
     def post(self, request, token):
@@ -233,6 +280,7 @@ class ModalGroupJoin(TemplateView):
             return JsonResponse({'message': '表單已失效，請重新整理。'})
 
         nick_name = request.POST.get('nick_name', request.user.username)
+        introduce = request.POST.get('introduce', '')
         share_groups = ShareGroup.objects.filter(token=token)
         if share_groups.exists() == False:
             return JsonResponse({'message': '申請失敗'})
@@ -240,21 +288,22 @@ class ModalGroupJoin(TemplateView):
 
         if share_group.is_viewable and share_group.is_apply:
             share_members = share_group.sharemember_set.filter(user=request.user)
-            if share_members.exists():
-                share_member:ShareMember = share_members[0]
-                if share_member.member_type == MemberRole.AUDIT:
-                    if 'del' in request.POST:
-                        share_member.delete()
-                        return JsonResponse({'message': '取消成功'})
+            if share_members.exists() == False:
+                ShareMember.objects.create(share_group=share_group, user=request.user, nick_name=nick_name)
+                return JsonResponse({'message': '申請成功'})
 
-                    share_member.nick_name = nick_name
-                    share_member.save()
-                    return JsonResponse({'message': '更改成功'})
-                else:
-                    return JsonResponse({'message': '已申請'})
+            share_member:ShareMember = share_members[0]
+            if share_member.member_type == MemberRole.BLOCKADE:
+                return JsonResponse({'message': '申請失敗'})
 
-            ShareMember.objects.create(share_group=share_group, user=request.user, nick_name=nick_name)
-            return JsonResponse({'message': '申請成功'})
+            if 'del' in request.POST:
+                share_member.delete()
+                return JsonResponse({'message': '取消成功'})
+
+            share_member.nick_name = nick_name
+            share_member.introduce = introduce
+            share_member.save()
+            return JsonResponse({'message': '更改成功'})
         return JsonResponse({'message': '申請失敗'})
 
 class ModalGroupAdmin(TemplateView):
@@ -310,3 +359,111 @@ class ModalGroupAdmin(TemplateView):
         share_group.save()
 
         return JsonResponse(data)
+
+
+class ModalGroupAddItam(TemplateView):
+    def get(self, request, group_id, detail_id):
+        form = csrfForm()
+        try:
+            share_self = ShareMember.objects.get(share_group__id=int(group_id), user=request.user)
+            if share_self.member_type not in [MemberRole.OWNER, MemberRole.ADMIN, MemberRole.MEMBER]:
+                return render(request, 'modal_group_error.html', {'message': '參數錯誤'})
+
+            if detail_id == 'new':
+                groupDetail = ShareGroupDetail.objects.filter(share_group__id=int(group_id)).last()
+                share_members = list(groupDetail.share_members.values_list("id", flat=True)) if groupDetail else []
+                return render(request, 'modal_group_add_item.html', {
+                    'title': '新增項目', 
+                    'form': form, 
+                    'share_self': share_self,
+                    'share_members': share_members,
+                    })
+
+            groupDetail = ShareGroupDetail.objects.get(share_group__id=int(group_id), id=int(detail_id))
+            share_members = list(groupDetail.share_members.values_list("id", flat=True))
+        except:
+            return render(request, 'modal_group_error.html', {'message': '參數錯誤'})
+        return render(request, 'modal_group_add_item.html', {
+            'title': '修改項目', 
+            'form': form, 
+            'share_self': share_self,
+            'groupDetail': groupDetail, 
+            'share_members': share_members, 
+            })
+
+    def post(self, request, group_id, detail_id):
+        # TODO 修改的部份還在施工
+        form = csrfForm(request.POST)
+        if form.is_valid() == False:
+            return JsonResponse({'message': '表單已失效，請重新整理。'})
+
+        post_data:dict = request.POST.dict()
+        print(post_data)
+
+        share_members_list = list(map(int, dict(request.POST).get('share_members', [])))
+        
+
+        create_date = post_data.get('create_date', '')
+        create_time = post_data.get('create_time', '')
+
+        getting_time = parse_datetime(f"{create_date} {create_time}")
+        getting_time = getting_time.replace(tzinfo=paris_tz)
+
+        share_group=ShareGroup.objects.get(id=int(group_id))
+        set_member = share_group.sharemember_set.get(user=request.user)
+        get_member = share_group.sharemember_set.get(id=int(post_data.get('get_member')))
+        share_members = share_group.sharemember_set.filter(id__in=share_members_list)
+
+        original_price=int(post_data.get('original_price', 0) if post_data.get('original_price', '') != '' else 0)
+
+        if detail_id == 'new':
+            userDetail = ShareGroupDetail.objects.create(
+                share_group=ShareGroup.objects.get(id=int(group_id)),
+                item=post_data.get('item', ''),
+                set_member=set_member,
+                get_member=get_member,
+                original_price=original_price,
+                share_price=int(original_price/len(share_members)),
+                getting_time=getting_time,
+            )
+            userDetail.share_members.set(share_members)
+
+            # receipt_data = {
+            #     'id': userDetail.id,
+            #     'item': userDetail.item,
+            #     "price": format(userDetail.price, ','),
+            #     'share_group': userDetail.share_group_detail.title if userDetail.share_group_detail else '',
+            #     'remark': userDetail.remark,
+            #     'getting_time': userDetail.getting_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d %H:%M'),
+            #     'create_time': userDetail.create_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d %H:%M'),
+            # }
+
+            return JsonResponse({'message': '新增成功'})
+
+        # try:
+        #     userDetail = UserDetail.objects.get(id=int(detail_id), user=request.user)
+        #     if 'del' in request.POST:
+        #         userDetail.delete()
+        #         receipt_data = {'id': int(detail_id),}
+        #         return JsonResponse({'message': '刪除成功', 'receipt_data': receipt_data})
+
+        #     userDetail.item = post_data.get('item', '')
+        #     userDetail.price = int(post_data.get('price', 0) if post_data.get('price', '') != '' else 0)
+        #     userDetail.remark = post_data.get('remark', '')
+        #     userDetail.getting_time = getting_time
+        #     userDetail.save()
+
+        #     receipt_data = {
+        #         'id': userDetail.id,
+        #         'item': userDetail.item,
+        #         "price": format(userDetail.price, ','),
+        #         'share_group': userDetail.share_group_detail.title if userDetail.share_group_detail else '',
+        #         'remark': userDetail.remark,
+        #         'getting_time': userDetail.getting_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d %H:%M'),
+        #         'create_time': userDetail.create_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d %H:%M'),
+        #     }
+
+        #     return JsonResponse({'message': '更新成功', 'receipt_data': receipt_data})
+
+        # except:
+        #     return render(request, 'modal_group_error.html', {'message': '參數錯誤'})

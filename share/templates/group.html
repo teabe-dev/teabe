@@ -50,15 +50,130 @@
     onclick="text_to_copy('https://{{ request.get_host }}{{ request.path }}')" title="無法複製請直接複製網址">點擊複製分寶(邀請)連結</button>
 {% endif %}
 
-{% if not share_self.member_type and share_group.is_apply or share_self.member_type == 12 %}
+{% if not share_self.member_type and share_group.is_apply %}
 <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#exampleModal"
     onclick="set_modal_content('modal_group_join/{{ share_group.token }}')">
     申請加入
 </button>
+{% elif share_self.member_type == 12 %}
+<button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#exampleModal"
+    onclick="set_modal_content('modal_group_join/{{ share_group.token }}')">
+    申請修改
+</button>
+權限變更後請重新整理頁面
+{% elif share_self.member_type >= 21 and share_self.member_type <= 23 %}
+<button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#exampleModal"
+    onclick="set_modal_content('modal_group_join/{{ share_group.token }}')">
+    更新會員資料
+</button>
+{% endif %}
+
+
+{% if share_self.member_type >= 21 and share_self.member_type <= 23 %}
+<br><br>
+<button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#exampleModal"
+    onclick="set_modal_content('modal_group_add_item/{{ share_group.id }}/new')">
+    新增紀錄
+</button>
 {% endif %}
 <br><br>
 
+{% csrf_token %}
+<table id="myTable" class="display" style="width:100%">
+    <thead>
+        <tr>
+            <th>取得成員</th>
+            <th>項目</th>
+            <th>金額</th>
+            <th>平分成員</th>
+            <th>取得日期</th>
+            <th>建立日期</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+</table>
+
+
 <script>
+    var wsSecure = 'ws'
+    var Protocol = window.location.protocol.split(':')[0];
+    if (Protocol === 'https') {
+        var wsSecure = 'wss'
+    }
+    const chatSocket = new WebSocket(`${wsSecure}://{{ request.get_host }}/share/{{ share_group.token }}/`);
+
+
+    var columns = [
+        { "data": "get_member"},
+        { "data": "item" },
+        { "data": "original_price" },
+        { "data": "share_members" },
+        { "data": "getting_time" },
+        { "data": "create_time" },
+        {
+            "targets": -1,
+            "data": null,
+            "defaultContent": `
+            <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#exampleModal" onclick="modify_modal_table(this)">修改</button>
+            `
+        },
+    ]
+
+
+
+    var columnDefs = [{
+        "targets": 3,
+        "orderable": false,
+        "render": function(data, type, row) {
+            var data = sessionStorage.getItem("members");
+            const members = JSON.parse(data).data;
+            result = ''
+            for (var i = 0; i < row.share_members.length; i++) {
+                value = members[row.share_members[i]]
+                result += `<img src="${value.avatar}" class="rounded-pill" style="width: 30px; height: 30px" title="${value.nick_name}">`
+            }
+            return result
+        }
+        }]
+
+
+    chatSocket.onmessage = function (e) {
+        const data = JSON.parse(e.data);
+        if (data['type'] == 'members') {
+            sessionStorage.setItem("members", e.data)
+            var members = e.data
+        } else if (data['type'] == 'table') {
+            var myTable = $('#myTable').DataTable({
+                    'language': language,
+                    'data': data['data'],
+                    'columns': columns,
+                    'columnDefs': columnDefs,
+                    "order": [[4, "desc"]],
+                });
+
+        }
+    };
+
+    chatSocket.onopen = function () {
+        chatSocket.send(JSON.stringify({
+            'type': 'members'
+        }));
+        chatSocket.send(JSON.stringify({
+            'type': 'table'
+        }));
+    }
+
+
+    chatSocket.onclose = function (e) {
+        alert('連線中斷 請重新整理頁面')
+    };
+
+    function modify_modal_table(this_button){
+        var table = $('#myTable').DataTable();
+        var data = table.row($(this_button).parents('tr')).data();
+        set_modal_content(`modal_group_add_item/{{ share_group.id }}/${data.id}`)
+    }
+
 </script>
 
 {% endblock share_content %}
