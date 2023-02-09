@@ -35,7 +35,7 @@
                 name="form-{{ group_member.id }}-member_type">
                     {% for memberRole in memberRole_choices %}
                     {% if memberRole.0 != 21 or group_member.member_type == 21 %}
-                    {% if memberRole.0 != 22 or group_member.member_type == 22 %}
+                    {% if memberRole.0 != 22 or group_member.member_type == 22 or share_self.member_type == 21%}
                     <option value="{{ memberRole.0 }}"{% if memberRole.0 == group_member.member_type %}selected{% endif %}>
                         {{ memberRole.1 }}
                     </option>

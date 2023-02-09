@@ -1,3 +1,5 @@
+{% load share_extras %}
+
 <div class="modal-header">
     <h1 class="modal-title fs-5" id="exampleModalLabel">申請加入{{ share_group.title }}</h1>
     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -5,16 +7,20 @@
 <form id="modal_form">
     <div class="modal-body">
         {% csrf_token %}
+        <h5>目前身份： {{ share_member.member_type | get_member_role_ch }}</h5>
 
         <div class="mb-3">
             <label for="nick_name" class="form-label">暱稱</label>
             <input type="text" class="form-control" id="nick_name" name="nick_name" placeholder="提比醬" value="{{ share_member.nick_name }}">
         </div>
-
+        <div class="mb-3">
+            <label for="introduce" class="form-label">自我介紹</label>
+            <input type="text" class="form-control" id="introduce" name="introduce" placeholder="來自月球" value="{{ share_member.introduce }}">
+        </div>
 
     </div>
     <div class="modal-footer">
-        {% if share_group %}
+        {% if share_member %}
         <button type="button" class="btn btn-danger" onclick="del()">取消申請</button>
         {% endif %}
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>

@@ -27,7 +27,8 @@ class ShareGroup(models.Model):
 class ShareMember(models.Model):
     share_group = models.ForeignKey(ShareGroup, on_delete=models.CASCADE, verbose_name='分寶群')
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='使用者')
-    nick_name = models.CharField(max_length=20, verbose_name='暱稱')
+    nick_name = models.CharField(default='', max_length=20, verbose_name='暱稱')
+    introduce = models.CharField(default='', max_length=60, verbose_name='自我介紹')
     member_type = models.IntegerField(choices=MemberRole.choices(), default=MemberRole.AUDIT, verbose_name='成員類別')
 
     class Meta:
@@ -40,9 +41,9 @@ class ShareMember(models.Model):
 class ShareGroupDetail(models.Model):
     share_group = models.ForeignKey(ShareGroup, on_delete=models.CASCADE, verbose_name='分寶群')
     item = models.CharField(max_length=20, verbose_name='項目')
-    set_user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='填表人', related_name='set_user')
-    get_user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='得寶人', related_name='get_user')
-    share_user = models.ManyToManyField(User, verbose_name='分寶人', related_name='share_user')
+    set_member = models.ForeignKey(ShareMember, on_delete=models.CASCADE, verbose_name='填表人', related_name='set_member')
+    get_member = models.ForeignKey(ShareMember, on_delete=models.CASCADE, verbose_name='得寶人', related_name='get_member')
+    share_members = models.ManyToManyField(ShareMember, verbose_name='分寶人', related_name='share_members')
     original_price = models.IntegerField(default=0, verbose_name='原始金額')
     share_price = models.IntegerField(default=0, verbose_name='平分金額')
     create_time = models.DateTimeField(default=timezone.now, verbose_name='建立時間')
@@ -58,9 +59,9 @@ class ShareGroupDetail(models.Model):
 class ShareGroupHistory(models.Model):
     share_group_detail = models.ForeignKey(ShareGroup, on_delete=models.CASCADE, verbose_name='分寶群明細表')
     item = models.CharField(max_length=20, verbose_name='項目')
-    set_user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='填表人', related_name='+')
-    get_user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='得寶人', related_name='+')
-    share_user = models.ManyToManyField(User, verbose_name='分寶人', related_name='+')
+    set_member = models.ForeignKey(ShareMember, on_delete=models.CASCADE, verbose_name='填表人', related_name='+')
+    get_member = models.ForeignKey(ShareMember, on_delete=models.CASCADE, verbose_name='得寶人', related_name='+')
+    share_members = models.ManyToManyField(ShareMember, verbose_name='分寶人', related_name='+')
     original_price = models.IntegerField(default=0, verbose_name='原始金額')
     share_price = models.IntegerField(default=0, verbose_name='平分金額')
     getting_time = models.DateTimeField(default=timezone.now, verbose_name='取得時間')

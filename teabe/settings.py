@@ -32,6 +32,8 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
+    'channels',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -82,7 +84,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'teabe.wsgi.application'
-
+ASGI_APPLICATION = 'teabe.asgi.application'
 
 SITE_ID = 1
 LOGIN_REDIRECT_URL = '/'

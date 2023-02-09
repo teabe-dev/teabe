@@ -16,17 +16,19 @@ class ShareMemberAdmin(admin.ModelAdmin):
 
 @admin.register(models.ShareGroupDetail)
 class ShareGroupDetailAdmin(admin.ModelAdmin):
-    list_display = ('share_group', 'item', 'set_user', 'get_user', 'getting_time', 'create_time', 'update_time')
+    # list_display = ('share_group', 'item', 'set_user', 'get_user', 'getting_time', 'create_time', 'update_time')
+    list_display = ('share_group', 'item', 'set_member', 'get_member', 'getting_time', 'create_time', 'update_time')
     search_fields = ['share_group', 'item']  # 搜尋條件
-    raw_id_fields = ('share_group', 'set_user', 'get_user')
-    filter_horizontal = ('share_user', )
+    raw_id_fields = ('share_group', 'set_member', 'get_member')
+    filter_horizontal = ('share_members', )
 
 @admin.register(models.ShareGroupHistory)
 class ShareGroupHistoryAdmin(admin.ModelAdmin):
-    list_display = ('share_group_detail', 'item', 'set_user', 'get_user', 'getting_time', 'create_time')
+    # list_display = ('share_group_detail', 'item', 'set_user', 'get_user', 'getting_time', 'create_time')
+    list_display = ('share_group_detail', 'item', 'set_member', 'get_member', 'getting_time', 'create_time')
     search_fields = ['share_group', 'item']  # 搜尋條件
-    raw_id_fields = ('set_user', 'get_user',)
-    filter_horizontal = ('share_user', )
+    raw_id_fields = ('set_member', 'get_member',)
+    filter_horizontal = ('share_members', )
 
 @admin.register(models.UserDetail)
 class UserDetailAdmin(admin.ModelAdmin):

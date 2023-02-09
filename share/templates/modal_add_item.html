@@ -8,7 +8,7 @@
 
         <div class="mb-3">
             <label for="item" class="form-label">項目：</label>
-            <input type="text" class="form-control" id="item" name="item" placeholder="米列希安們" value="{{ userDetail.item }}">
+            <input type="text" class="form-control" id="item" name="item" placeholder="米列希安們" value="{{ userDetail.item }}" required>
         </div>
 
         <div class="mb-3">
@@ -26,17 +26,17 @@
             <div class="row">
                 {% if userDetail.getting_time %}
                 <div class="col">
-                    <input type="date" class="form-control" name="create_date" placeholder="" value="{{ userDetail.getting_time | date:'Y-m-d' }}">
+                    <input type="date" class="form-control" name="create_date" placeholder="" value="{{ userDetail.getting_time | date:'Y-m-d' }}" required>
                 </div>
                 <div class="col">
-                    <input type="time" class="form-control" name="create_time" placeholder="" value="{{ userDetail.getting_time | time:'H:i' }}">
+                    <input type="time" class="form-control" name="create_time" placeholder="" value="{{ userDetail.getting_time | time:'H:i' }}" required>
                 </div>
                 {% else %}
                 <div class="col">
-                    <input type="date" class="form-control" name="create_date" placeholder="" value="{% now 'Y-m-d' %}">
+                    <input type="date" class="form-control" name="create_date" placeholder="" value="{% now 'Y-m-d' %}" required>
                 </div>
                 <div class="col">
-                    <input type="time" class="form-control" name="create_time" placeholder="" value="{% now 'H:i' %}">
+                    <input type="time" class="form-control" name="create_time" placeholder="" value="{% now 'H:i' %}" required>
                 </div>
                 {% endif %}
             </div>
