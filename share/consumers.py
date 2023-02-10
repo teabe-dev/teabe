@@ -42,8 +42,6 @@ class ShareConsumer(AsyncWebsocketConsumer):
         elif json_data['type'] == 'table':
             data = await self.get_table(json_data)
             await self.send(text_data=json.dumps({'type': 'table', 'data': data}, ensure_ascii=False))
-
-
         else:
             await self.channel_layer.group_send(
                 self.room_group_name,
@@ -82,12 +80,17 @@ class ShareConsumer(AsyncWebsocketConsumer):
             receipt_data = {
                 'id': groupDetail.id,
                 'get_member': groupDetail.get_member.nick_name,
+                'set_member': groupDetail.set_member.nick_name,
                 'item': groupDetail.item,
                 'share_members': list(groupDetail.share_members.values_list("id", flat=True)),
-                "original_price": format(groupDetail.original_price, ','),
+                "original_price": groupDetail.original_price,
+                "share_price": groupDetail.share_price,
                 'getting_time': groupDetail.getting_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d %H:%M'),
-                'create_time': groupDetail.create_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d %H:%M'),
+                'update_time': groupDetail.update_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d'),
+                'create_time': groupDetail.create_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d'),
             }
             result.append(receipt_data)
         return result
     
+    async def update_group_table(self, json_data):
+        await self.send(text_data=json.dumps(json_data, ensure_ascii=False))

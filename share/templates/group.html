@@ -77,22 +77,21 @@
 </button>
 {% endif %}
 <br><br>
-
 {% csrf_token %}
 <table id="myTable" class="display" style="width:100%">
     <thead>
         <tr>
+            <th></th>
             <th>取得成員</th>
             <th>項目</th>
             <th>金額</th>
             <th>平分成員</th>
+            <th>平分人數</th>
             <th>取得日期</th>
-            <th>建立日期</th>
-            <th>操作</th>
         </tr>
     </thead>
 </table>
-
+<p>最多顯示近1000筆資料</p>
 
 <script>
     var wsSecure = 'ws'
@@ -100,29 +99,58 @@
     if (Protocol === 'https') {
         var wsSecure = 'wss'
     }
-    const chatSocket = new WebSocket(`${wsSecure}://{{ request.get_host }}/share/{{ share_group.token }}/`);
-
+    const chatSocket = new WebSocket(`${wsSecure}://{{ request.get_host }}/share/{{ share_group.token.hex }}/`);
 
     var columns = [
+        {
+        className: 'dt-control',
+        orderable: false,
+        data: null,
+        defaultContent: '',
+        },
         { "data": "get_member"},
         { "data": "item" },
         { "data": "original_price" },
         { "data": "share_members" },
+        { "data": "share_members" },
         { "data": "getting_time" },
-        { "data": "create_time" },
-        {
-            "targets": -1,
-            "data": null,
-            "defaultContent": `
-            <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#exampleModal" onclick="modify_modal_table(this)">修改</button>
-            `
-        },
     ]
+        
+    function open_row(d) {
+    // `d` is the original data object for the row
+    share_price = d.share_price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+    return (
+        `<table cellpadding="5" cellspacing="0" border="0" style="padding-left:50px;">
+        <tr>
+        <td>建立時間：</td>
+        <td>${d.create_time}</td>
+        </tr>
 
+        <tr>
+        <td>平分金額：</td>
+        <td>${share_price}</td>
+        </tr>
+        <tr>
+        <td>最後更新時間/成員：</td>
+        <td>${d.update_time} ${d.set_member}</td>
+        </tr>
 
+        <tr>
+        <td>操作：</td>
+        <td><button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#exampleModal" onclick="modify_modal_table(${d.id})">修改</button></td>
+        </tr>
+
+        </table>`
+    );
+    }
 
     var columnDefs = [{
-        "targets": 3,
+        targets: 2,
+        render: function (data, type, row) {
+            return data.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            }
+        },{
+        "targets": 4,
         "orderable": false,
         "render": function(data, type, row) {
             var data = sessionStorage.getItem("members");
@@ -133,8 +161,15 @@
                 result += `<img src="${value.avatar}" class="rounded-pill" style="width: 30px; height: 30px" title="${value.nick_name}">`
             }
             return result
+        },
+        },
+        {
+        targets: 5,
+        render: function (data, type, row) {
+            return row.share_members.length;
+            }
         }
-        }]
+    ]
 
 
     chatSocket.onmessage = function (e) {
@@ -148,9 +183,43 @@
                     'data': data['data'],
                     'columns': columns,
                     'columnDefs': columnDefs,
-                    "order": [[4, "desc"]],
-                });
+                    "order": [[6, "desc"]],
+            });
+            change_size()
 
+            $('#myTable tbody').on('click', 'td.dt-control', function () {
+                var tr = $(this).closest('tr');
+                var row = myTable.row(tr);
+        
+                if (row.child.isShown()) {
+                    // This row is already open - close it
+                    row.child.hide();
+                    tr.removeClass('shown');
+                } else {
+                    // Open this row
+                    row.child(open_row(row.data())).show();
+                    tr.addClass('shown');
+                }
+            });
+        } else if (data['type'] == 'update_group_table') {
+            var result = data['data']['data']
+            if (data['data']['type'] == 'append'){
+                var table = $('#myTable').DataTable();
+                table.row.add(result).draw();
+            } else if (data['data']['type'] == 'update'){
+                var table = $('#myTable').DataTable();
+                var rows = table.rows(function(idx, data, node) {
+                    return data.id === result['id'];
+                });
+                table.row(rows.indexes().toArray()[0]).remove().draw();
+                table.row.add(result).draw();
+            } else if (data['data']['type'] == 'delete'){
+                var table = $('#myTable').DataTable();
+                var rows = table.rows(function(idx, data, node) {
+                    return data.id === result['id'];
+                });
+                table.row(rows.indexes().toArray()[0]).remove().draw();
+            }
         }
     };
 
@@ -168,10 +237,24 @@
         alert('連線中斷 請重新整理頁面')
     };
 
-    function modify_modal_table(this_button){
-        var table = $('#myTable').DataTable();
-        var data = table.row($(this_button).parents('tr')).data();
-        set_modal_content(`modal_group_add_item/{{ share_group.id }}/${data.id}`)
+    function modify_modal_table(row_id){
+        set_modal_content(`modal_group_add_item/{{ share_group.id }}/${row_id}`)
+    }
+
+
+    $(window).resize(change_size);
+
+    function change_size () {
+        var wdth = $(window).width();
+        if (wdth < 768) {
+            var table = $('#myTable').DataTable();
+            table.column(4).visible(false);
+            table.column(5).visible(true);
+        } else {
+            var table = $('#myTable').DataTable();
+            table.column(4).visible(true);
+            table.column(5).visible(false);
+        }
     }
 
 </script>

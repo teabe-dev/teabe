@@ -13,6 +13,8 @@ from django.views.generic import TemplateView, View
 from share.enums import MemberRole
 from share.forms import GroupCreateForm, csrfForm
 from share.models import ShareGroup, ShareMember, UserDetail, ShareGroupDetail, ShareGroupHistory
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
 paris_tz = zoneinfo.ZoneInfo(settings.TIME_ZONE)
 # Create your views here.
@@ -392,16 +394,16 @@ class ModalGroupAddItam(TemplateView):
             })
 
     def post(self, request, group_id, detail_id):
-        # TODO 修改的部份還在施工
         form = csrfForm(request.POST)
         if form.is_valid() == False:
             return JsonResponse({'message': '表單已失效，請重新整理。'})
 
-        post_data:dict = request.POST.dict()
-        print(post_data)
+        share_self = ShareMember.objects.get(share_group__id=int(group_id), user=request.user)
+        if share_self.member_type not in [MemberRole.OWNER, MemberRole.ADMIN, MemberRole.MEMBER]:
+            return render(request, 'modal_group_error.html', {'message': '參數錯誤'})
 
+        post_data:dict = request.POST.dict()
         share_members_list = list(map(int, dict(request.POST).get('share_members', [])))
-        
 
         create_date = post_data.get('create_date', '')
         create_time = post_data.get('create_time', '')
@@ -416,8 +418,9 @@ class ModalGroupAddItam(TemplateView):
 
         original_price=int(post_data.get('original_price', 0) if post_data.get('original_price', '') != '' else 0)
 
+        channel_layer = get_channel_layer()
         if detail_id == 'new':
-            userDetail = ShareGroupDetail.objects.create(
+            groupDetail = ShareGroupDetail.objects.create(
                 share_group=ShareGroup.objects.get(id=int(group_id)),
                 item=post_data.get('item', ''),
                 set_member=set_member,
@@ -426,44 +429,63 @@ class ModalGroupAddItam(TemplateView):
                 share_price=int(original_price/len(share_members)),
                 getting_time=getting_time,
             )
-            userDetail.share_members.set(share_members)
+            groupDetail.share_members.set(share_members)
 
-            # receipt_data = {
-            #     'id': userDetail.id,
-            #     'item': userDetail.item,
-            #     "price": format(userDetail.price, ','),
-            #     'share_group': userDetail.share_group_detail.title if userDetail.share_group_detail else '',
-            #     'remark': userDetail.remark,
-            #     'getting_time': userDetail.getting_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d %H:%M'),
-            #     'create_time': userDetail.create_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d %H:%M'),
-            # }
+            async_to_sync(channel_layer.group_send)(share_group.token.hex, {
+                "type": "update_group_table", 
+                "data": {
+                    "type": 'append',
+                    "data": {
+                    'id': groupDetail.id,
+                    'get_member': groupDetail.get_member.nick_name,
+                    'set_member': groupDetail.set_member.nick_name,
+                    'item': groupDetail.item,
+                    'share_members': list(groupDetail.share_members.values_list("id", flat=True)),
+                    "original_price": groupDetail.original_price,
+                    "share_price": groupDetail.share_price,
+                    'getting_time': groupDetail.getting_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d %H:%M'),
+                    'update_time': groupDetail.update_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d'),
+                    'create_time': groupDetail.create_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d'),
+                }},})
 
             return JsonResponse({'message': '新增成功'})
+        try:
+            groupDetail = ShareGroupDetail.objects.get(share_group__id=int(group_id), id=int(detail_id))
+            if 'del' in request.POST:
+                del_id = groupDetail.id
+                groupDetail.delete()
+                async_to_sync(channel_layer.group_send)(share_group.token.hex, {
+                    "type": "update_group_table", 
+                    "data": {
+                        "type": 'delete',
+                        "data": {
+                        'id': del_id,}},})
+                return JsonResponse({'message': '刪除成功'})
+            groupDetail.item=post_data.get('item', '')
+            groupDetail.set_member=set_member
+            groupDetail.get_member=get_member
+            groupDetail.original_price=original_price
+            groupDetail.share_price=int(original_price/len(share_members))
+            groupDetail.getting_time=getting_time
+            groupDetail.save()
 
-        # try:
-        #     userDetail = UserDetail.objects.get(id=int(detail_id), user=request.user)
-        #     if 'del' in request.POST:
-        #         userDetail.delete()
-        #         receipt_data = {'id': int(detail_id),}
-        #         return JsonResponse({'message': '刪除成功', 'receipt_data': receipt_data})
+            async_to_sync(channel_layer.group_send)(share_group.token.hex, {
+                "type": "update_group_table", 
+                "data": {
+                    "type": 'update',
+                    "data": {
+                    'id': groupDetail.id,
+                    'get_member': groupDetail.get_member.nick_name,
+                    'set_member': groupDetail.set_member.nick_name,
+                    'item': groupDetail.item,
+                    'share_members': list(groupDetail.share_members.values_list("id", flat=True)),
+                    "original_price": groupDetail.original_price,
+                    "share_price": groupDetail.share_price,
+                    'getting_time': groupDetail.getting_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d %H:%M'),
+                    'update_time': groupDetail.update_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d'),
+                    'create_time': groupDetail.create_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d'),
+                }},})
+            return JsonResponse({'message': '更新成功'})
 
-        #     userDetail.item = post_data.get('item', '')
-        #     userDetail.price = int(post_data.get('price', 0) if post_data.get('price', '') != '' else 0)
-        #     userDetail.remark = post_data.get('remark', '')
-        #     userDetail.getting_time = getting_time
-        #     userDetail.save()
-
-        #     receipt_data = {
-        #         'id': userDetail.id,
-        #         'item': userDetail.item,
-        #         "price": format(userDetail.price, ','),
-        #         'share_group': userDetail.share_group_detail.title if userDetail.share_group_detail else '',
-        #         'remark': userDetail.remark,
-        #         'getting_time': userDetail.getting_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d %H:%M'),
-        #         'create_time': userDetail.create_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d %H:%M'),
-        #     }
-
-        #     return JsonResponse({'message': '更新成功', 'receipt_data': receipt_data})
-
-        # except:
-        #     return render(request, 'modal_group_error.html', {'message': '參數錯誤'})
+        except:
+            return render(request, 'modal_group_error.html', {'message': '參數錯誤'})

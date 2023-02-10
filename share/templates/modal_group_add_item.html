@@ -43,7 +43,7 @@
         </div>
     </div>
     <div class="modal-footer">
-        {% if userDetail %}
+        {% if groupDetail %}
         <button type="button" class="btn btn-danger" onclick="del()">刪除</button>
         {% endif %}
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
@@ -93,10 +93,6 @@ $(document).ready(function () {
             </div>
         `)
 
-
-
-        // {{ share_members }}
-
         if ("{{ groupDetail.get_member.id }}"){
             $("#get_member").val("{{ groupDetail.get_member.id }}")
         } else {
@@ -133,24 +129,11 @@ $(document).ready(function () {
             type: 'post',
             url: '{{ request.path }}',
             data: $('#modal_form').serialize(),
-            // success: function (res) {
-            //     // 修改表格
-            //     if (res['message'] === '新增成功'){
-            //         var table = $('#myTable').DataTable();
-            //         table.row.add(res['receipt_data']).draw();
-            //     } else if (res['message'] === '更新成功') {
-            //         var table = $('#myTable').DataTable();
-
-            //         var rows = table.rows(function(idx, data, node) {
-            //             return data.id === res['receipt_data']['id'];
-            //         });
-            //         table.row(rows.indexes().toArray()[0]).remove().draw();
-
-            //         table.row.add(res['receipt_data']).draw();
-            //     }
-            //     alert(res['message']);
-            //     $('#exampleModal').modal('hide')
-            // }
+            success: function (res) {
+                // 修改表格
+                alert(res['message']);
+                $('#exampleModal').modal('hide')
+            }
         });
     });
 
