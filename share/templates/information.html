@@ -68,16 +68,7 @@
             `
         },
     ]
-    var columnDefs = [{
-        "targets": 6,
-        "orderable": false,
-        "render": function(data, type, row) {
-            if (row.share_group != "") {
-                return "";
-            } else {
-                return data;
-            }}
-        }]
+
 
     $(document).ready( function () {
         $.ajax({
@@ -90,7 +81,10 @@
                     'language': language,
                     'data': data.result,
                     'columns': columns,
-                    'columnDefs': columnDefs,
+                    "columnDefs": [
+                        { 'className': 'text-center', 'targets': [0, 2, 3, 4, 5] },
+                        { 'className': 'text-end', 'targets': [1] },
+                    ],
                     "order": [[4, "desc"]],
                 });
                 change_size()

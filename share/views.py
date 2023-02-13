@@ -366,32 +366,28 @@ class ModalGroupAdmin(TemplateView):
 class ModalGroupAddItam(TemplateView):
     def get(self, request, group_id, detail_id):
         form = csrfForm()
+        data = {'form': form,}
         try:
             share_self = ShareMember.objects.get(share_group__id=int(group_id), user=request.user)
             if share_self.member_type not in [MemberRole.OWNER, MemberRole.ADMIN, MemberRole.MEMBER]:
                 return render(request, 'modal_group_error.html', {'message': '參數錯誤'})
+            data['share_self'] = share_self
 
             if detail_id == 'new':
                 groupDetail = ShareGroupDetail.objects.filter(share_group__id=int(group_id)).last()
                 share_members = list(groupDetail.share_members.values_list("id", flat=True)) if groupDetail else []
-                return render(request, 'modal_group_add_item.html', {
-                    'title': '新增項目', 
-                    'form': form, 
-                    'share_self': share_self,
-                    'share_members': share_members,
-                    })
+                data['title'] = '新增項目'
+                data['share_members'] = share_members # 取最後一筆的紀錄
+                return render(request, 'modal_group_add_item.html', data)
 
             groupDetail = ShareGroupDetail.objects.get(share_group__id=int(group_id), id=int(detail_id))
             share_members = list(groupDetail.share_members.values_list("id", flat=True))
+            data['title'] = '修改項目'
+            data['groupDetail'] = groupDetail
+            data['share_members'] = share_members
         except:
             return render(request, 'modal_group_error.html', {'message': '參數錯誤'})
-        return render(request, 'modal_group_add_item.html', {
-            'title': '修改項目', 
-            'form': form, 
-            'share_self': share_self,
-            'groupDetail': groupDetail, 
-            'share_members': share_members, 
-            })
+        return render(request, 'modal_group_add_item.html', data)
 
     def post(self, request, group_id, detail_id):
         form = csrfForm(request.POST)
@@ -405,6 +401,7 @@ class ModalGroupAddItam(TemplateView):
         post_data:dict = request.POST.dict()
         share_members_list = list(map(int, dict(request.POST).get('share_members', [])))
 
+        price_options = post_data.get('price_options', '')
         create_date = post_data.get('create_date', '')
         create_time = post_data.get('create_time', '')
 
@@ -417,6 +414,15 @@ class ModalGroupAddItam(TemplateView):
         share_members = share_group.sharemember_set.filter(id__in=share_members_list)
 
         original_price=int(post_data.get('original_price', 0) if post_data.get('original_price', '') != '' else 0)
+        share_members_num = len(share_members)
+        share_price = 0
+        if original_price:
+            if price_options == '1':
+                share_price = int(original_price/share_members_num)
+            else:
+                price = int(original_price/0.95)
+                fee = int(price*0.01 if price*0.01 <= 100000 else 100000)
+                share_price = int((original_price-fee)*0.98/share_members_num)
 
         channel_layer = get_channel_layer()
         if detail_id == 'new':
@@ -426,66 +432,139 @@ class ModalGroupAddItam(TemplateView):
                 set_member=set_member,
                 get_member=get_member,
                 original_price=original_price,
-                share_price=int(original_price/len(share_members)),
+                share_price=share_price,
                 getting_time=getting_time,
+                extra={'price_options': price_options}
             )
             groupDetail.share_members.set(share_members)
+
+            self.personal_append_item(
+                item=groupDetail.item,
+                share_group_detail=groupDetail.share_group, 
+                getting_time=groupDetail.getting_time,
+                before_members=ShareMember.objects.none(), 
+                after_members=share_members, 
+                before_price=0,
+                after_price=groupDetail.share_price
+                )
 
             async_to_sync(channel_layer.group_send)(share_group.token.hex, {
                 "type": "update_group_table", 
                 "data": {
                     "type": 'append',
-                    "data": {
-                    'id': groupDetail.id,
-                    'get_member': groupDetail.get_member.nick_name,
-                    'set_member': groupDetail.set_member.nick_name,
-                    'item': groupDetail.item,
-                    'share_members': list(groupDetail.share_members.values_list("id", flat=True)),
-                    "original_price": groupDetail.original_price,
-                    "share_price": groupDetail.share_price,
-                    'getting_time': groupDetail.getting_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d %H:%M'),
-                    'update_time': groupDetail.update_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d'),
-                    'create_time': groupDetail.create_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d'),
-                }},})
+                    "data": self.get_output_json(groupDetail)},})
 
             return JsonResponse({'message': '新增成功'})
         try:
             groupDetail = ShareGroupDetail.objects.get(share_group__id=int(group_id), id=int(detail_id))
             if 'del' in request.POST:
                 del_id = groupDetail.id
+
+                self.personal_append_item(
+                    item=groupDetail.item,
+                    share_group_detail=groupDetail.share_group, 
+                    getting_time=groupDetail.getting_time,
+                    before_members=groupDetail.share_members.all(), 
+                    after_members=ShareMember.objects.none(), 
+                    before_price=groupDetail.share_price,
+                    after_price=0
+                    )
                 groupDetail.delete()
+
                 async_to_sync(channel_layer.group_send)(share_group.token.hex, {
                     "type": "update_group_table", 
                     "data": {
                         "type": 'delete',
-                        "data": {
-                        'id': del_id,}},})
+                        "data": {'id': del_id}}})
                 return JsonResponse({'message': '刪除成功'})
+
+            self.personal_append_item(
+                item=post_data.get('item', ''), 
+                share_group_detail=groupDetail.share_group, 
+                getting_time=getting_time,
+                before_members=groupDetail.share_members.all(), 
+                after_members=share_members, 
+                before_price=groupDetail.share_price, 
+                after_price=share_price)
+
             groupDetail.item=post_data.get('item', '')
             groupDetail.set_member=set_member
             groupDetail.get_member=get_member
             groupDetail.original_price=original_price
-            groupDetail.share_price=int(original_price/len(share_members))
+            groupDetail.share_price=share_price
             groupDetail.getting_time=getting_time
+            groupDetail.extra={'price_options': price_options}
+            groupDetail.share_members.set(share_members)
             groupDetail.save()
 
             async_to_sync(channel_layer.group_send)(share_group.token.hex, {
                 "type": "update_group_table", 
                 "data": {
                     "type": 'update',
-                    "data": {
-                    'id': groupDetail.id,
-                    'get_member': groupDetail.get_member.nick_name,
-                    'set_member': groupDetail.set_member.nick_name,
-                    'item': groupDetail.item,
-                    'share_members': list(groupDetail.share_members.values_list("id", flat=True)),
-                    "original_price": groupDetail.original_price,
-                    "share_price": groupDetail.share_price,
-                    'getting_time': groupDetail.getting_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d %H:%M'),
-                    'update_time': groupDetail.update_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d'),
-                    'create_time': groupDetail.create_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d'),
-                }},})
+                    "data": self.get_output_json(groupDetail)},})
             return JsonResponse({'message': '更新成功'})
 
         except:
             return render(request, 'modal_group_error.html', {'message': '參數錯誤'})
+        
+    def get_output_json(self, groupDetail:ShareGroupDetail):
+        return {
+            'id': groupDetail.id,
+            'get_member': groupDetail.get_member.nick_name,
+            'set_member': groupDetail.set_member.nick_name,
+            'item': groupDetail.item,
+            'share_members': list(groupDetail.share_members.values_list("id", flat=True)),
+            "original_price": groupDetail.original_price,
+            "share_price": groupDetail.share_price,
+            'getting_time': groupDetail.getting_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d %H:%M'),
+            'update_time': groupDetail.update_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d'),
+            'create_time': groupDetail.create_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d'),
+            'extra': groupDetail.extra
+            }
+
+    def personal_append_item(self, item, share_group_detail, getting_time, before_members, after_members, before_price:int, after_price:int):
+        detail_data = []
+        diff_before = before_members.exclude(pk__in=after_members)# 之前有 之後沒有的
+        if before_price:
+            for member in diff_before:
+                member:ShareMember
+                detail_data.append(UserDetail(
+                    user=member.user,
+                    item=item,
+                    price=before_price*-1,
+                    share_group_detail=share_group_detail,
+                    remark=f'移除項目',
+                    getting_time=getting_time,
+                ))
+
+        diff_after = after_members.exclude(pk__in=before_members)# 之前沒有 之後有的
+        if after_price:
+            for member in diff_after:
+                member:ShareMember
+                detail_data.append(UserDetail(
+                    user=member.user,
+                    item=item,
+                    price=after_price,
+                    share_group_detail=share_group_detail,
+                    getting_time=getting_time,
+                ))
+
+        intersection = before_members & after_members
+        if intersection:
+            remark = ''
+            if (before_price == 0 and after_price > 0) == False:
+                remark='修改項目'
+
+            for member in intersection:
+                member:ShareMember
+                detail_data.append(UserDetail(
+                    user=member.user,
+                    item=item,
+                    price=after_price-before_price,
+                    share_group_detail=share_group_detail,
+                    remark=remark,
+                    getting_time=getting_time,
+                ))
+
+        UserDetail.objects.bulk_create(detail_data)
+

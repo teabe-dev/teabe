@@ -91,7 +91,7 @@
         </tr>
     </thead>
 </table>
-<p>最多顯示近1000筆資料</p>
+<p>最多顯示近1000筆資料，平分金額是計算後(手續費)的結果</p>
 
 <script>
     var wsSecure = 'ws'
@@ -115,7 +115,7 @@
         { "data": "share_members" },
         { "data": "getting_time" },
     ]
-        
+
     function open_row(d) {
     // `d` is the original data object for the row
     share_price = d.share_price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
@@ -144,9 +144,16 @@
     );
     }
 
-    var columnDefs = [{
-        targets: 2,
-        render: function (data, type, row) {
+    var columnDefs = [{ 
+        "targets": 1,
+        'className': 'text-center'
+        },{ 
+        "targets": 2,
+        'className': 'text-center'
+        },{
+        "targets": 3,
+        'className': 'text-end',
+        "render": function (data, type, row) {
             return data.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
             }
         },{
@@ -162,13 +169,15 @@
             }
             return result
         },
-        },
-        {
-        targets: 5,
-        render: function (data, type, row) {
+        },{
+        "targets": 5,
+        "render": function (data, type, row) {
             return row.share_members.length;
             }
-        }
+        },{
+        "targets": 6,
+        'className': 'text-center'
+        },
     ]
 
 

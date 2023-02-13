@@ -1,3 +1,4 @@
+import json
 import uuid
 
 from django.contrib.auth.models import User
@@ -7,6 +8,14 @@ from django.utils import timezone
 from share.enums import MemberRole
 
 # Create your models here.
+
+class CustomJSONField(models.JSONField):
+    ''' json 的 Field'''
+    def get_prep_value(self, value):
+        if value is None:
+            return value
+        return json.dumps(value, ensure_ascii=False)
+
 
 class ShareGroup(models.Model):
     title = models.CharField(max_length=20, verbose_name='標題')
@@ -49,6 +58,7 @@ class ShareGroupDetail(models.Model):
     create_time = models.DateTimeField(default=timezone.now, verbose_name='建立時間')
     getting_time = models.DateTimeField(default=timezone.now, verbose_name='取得時間')
     update_time = models.DateTimeField(default=timezone.now, verbose_name='更新時間')
+    extra = CustomJSONField(default=dict, blank=True, null=True, verbose_name='額外')
 
     class Meta:
         verbose_name = "分寶群明細表"
