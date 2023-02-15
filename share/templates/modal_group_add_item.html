@@ -39,10 +39,10 @@
             <div class="row">
                 {% if groupDetail.getting_time %}
                 <div class="col">
-                    <input type="date" class="form-control" name="create_date" placeholder="" value="{{ groupDetail.getting_time | date:'Y-m-d' }}" required>
+                    <input type="date" class="form-control" name="create_date" placeholder="" value="{{ groupDetail.getting_time | date:'Y-m-d' }}" required disabled>
                 </div>
                 <div class="col">
-                    <input type="time" class="form-control" name="create_time" placeholder="" value="{{ groupDetail.getting_time | time:'H:i' }}" required>
+                    <input type="time" class="form-control" name="create_time" placeholder="" value="{{ groupDetail.getting_time | time:'H:i' }}" required disabled>
                 </div>
                 {% else %}
                 <div class="col">
@@ -94,7 +94,7 @@ $(document).ready(function () {
     }
     $('#get_member_html').html(`
             <label for="get_member" class="form-label">取得成員：</label>
-            <select class="form-select" size="3" id="get_member" name="get_member" required>
+            <select class="form-select" size="3" id="get_member" name="get_member" required {% if groupDetail %}disabled{% endif %}>
             ${get_member_html}
             </select>
     `)

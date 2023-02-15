@@ -63,6 +63,7 @@
             data: $('#modal_form').serialize(),
             success: function (res) {
                 alert(res['message']);
+                $('#exampleModal').modal('hide')
             }
         });
     });

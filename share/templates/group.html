@@ -68,9 +68,9 @@
 </button>
 {% endif %}
 
-
+<hr class="style-gradual">
 {% if share_self.member_type >= 21 and share_self.member_type <= 23 %}
-<br><br>
+
 <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#exampleModal"
     onclick="set_modal_content('modal_group_add_item/{{ share_group.id }}/new')">
     新增紀錄
@@ -92,6 +92,12 @@
     </thead>
 </table>
 <p>最多顯示近1000筆資料，平分金額是計算後(手續費)的結果</p>
+<hr class="style-gradual">
+
+<h2>結算</h2>
+<div id="share_member"></div>
+<br><br><br><br>
+
 
 <script>
     var wsSecure = 'ws'
@@ -186,7 +192,8 @@
         if (data['type'] == 'members') {
             sessionStorage.setItem("members", e.data)
             var members = e.data
-        } else if (data['type'] == 'table') {
+        } 
+        else if (data['type'] == 'table') {
             var myTable = $('#myTable').DataTable({
                     'language': language,
                     'data': data['data'],
@@ -210,7 +217,8 @@
                     tr.addClass('shown');
                 }
             });
-        } else if (data['type'] == 'update_group_table') {
+        } 
+        else if (data['type'] == 'update_group_table') {
             var result = data['data']['data']
             if (data['data']['type'] == 'append'){
                 var table = $('#myTable').DataTable();
@@ -230,6 +238,103 @@
                 table.row(rows.indexes().toArray()[0]).remove().draw();
             }
         }
+        else if (data['type'] == 'price_of_member') {
+            console.log(data['data'])
+            var data_jaon = sessionStorage.getItem("members");
+            const members = JSON.parse(data_jaon).data;
+
+            html_part = ``
+            for (const [key, value] of Object.entries(members)) {
+                member_html_part = '<div class="accordion-item">'
+
+                if (key === '{{ share_self.id }}'){
+                    console.log('---------')
+                    aria_expanded = true
+                    aria_show = 'show'
+                    text_success = 'text-success'
+                } else {
+                    aria_expanded = false
+                    aria_show = ''
+                    text_success = ''
+                }
+
+                member_html_part_1 = ''
+                maney = 0
+                for (var i = 0; i < data['data'].length; i++) {
+                    member = data['data'][i]
+                    if (member.in_member === Number(key) && member.price > 0){
+                        // 收錢的是自己
+                        member_html_part_1 += `
+                        <tr>
+                            <td class="text-center">${members[member.out_member].nick_name}</td>
+                            <td class="text-end"></td>
+                            <td class="text-end">${member.price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</td>
+                        </tr>
+                        `
+                        maney += member.price
+                    } 
+                    else if (member.out_member === Number(key) && member.price > 0) {
+                        member_html_part_1 += `
+                        <tr>
+                            <td class="text-center">${members[member.in_member].nick_name}</td>
+                            <td class="text-end" data-bs-toggle="modal" data-bs-target="#exampleModal" onclick="set_modal_content('modal_group_send_price/{{ share_group.id }}/${member.id}')">
+
+                                <a class="link-primary user-select-none">${member.price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</a>
+                                </td>
+                            <td class="text-end"></td>
+                        </tr>
+                        `
+                        maney -= member.price
+                    }
+                }
+                total_maney_html = ''
+                if (maney){
+                    total_maney_html = `<span class="badge rounded-pill bg-light text-dark ">  ${maney.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}  </span>`
+                }
+                introduce_html = ''
+                if (value.introduce){
+                    introduce_html = `<span class="badge rounded-pill bg-light text-dark ">  ${value.introduce}  </span>`
+                }
+                
+                member_html_part += `
+                <h2 class="accordion-header mb-0" id="heading_${key}">
+                    <button class="accordion-button collapsed ${text_success}" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#collapse_${key}" aria-expanded="${aria_expanded}" aria-controls="collapse_${key}">
+                        ${value.nick_name}
+                        ${total_maney_html}
+                        ${introduce_html}
+                    </button>
+                </h2>
+
+                <div id="collapse_${key}"
+                    class="accordion-collapse collapse ${aria_show}"
+                    aria-labelledby="heading_${key}" data-bs-parent="#accordionExample">
+                    <div class="accordion-body">
+                        <table class="table table-hover" style="width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th class="text-center">暱稱</th>
+                                    <th class="text-end">發送金額<span class="badge rounded-pill bg-primary">稅後</span></th>
+                                    <th class="text-end">收到金額<span class="badge rounded-pill bg-primary">稅後</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `
+
+                member_html_part += member_html_part_1
+                member_html_part += '</tbody></table></div></div></div>'
+                html_part += member_html_part
+            }
+
+            html_data = `
+            <div class="accordion" id="accordionExample">
+                ${html_part}
+            </div>
+            `
+            $("#share_member").html(html_data)
+
+
+        }
     };
 
     chatSocket.onopen = function () {
@@ -238,6 +343,9 @@
         }));
         chatSocket.send(JSON.stringify({
             'type': 'table'
+        }));
+        chatSocket.send(JSON.stringify({
+            'type': 'price_of_member'
         }));
     }
 

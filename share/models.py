@@ -101,8 +101,9 @@ class UserDetail(models.Model):
         return "{}".format(self.item)
 
 class ShareStats(models.Model):
-    out_user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='待出帳者', related_name='out_user')
-    in_user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='待入帳者', related_name='in_user')
+    share_group_detail = models.ForeignKey(ShareGroup, on_delete=models.CASCADE, verbose_name='分寶群明細表')
+    out_member = models.ForeignKey(ShareMember, on_delete=models.CASCADE, verbose_name='待出帳者', related_name='out_member')
+    in_member = models.ForeignKey(ShareMember, on_delete=models.CASCADE, verbose_name='待入帳者', related_name='in_member')
     price = models.IntegerField(default=0, verbose_name='金額')
     class Meta:
         verbose_name = "分寶統計表"

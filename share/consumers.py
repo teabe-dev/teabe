@@ -6,8 +6,8 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.layers import get_channel_layer
 from django.conf import settings
 
-from share.models import ShareGroup, ShareGroupDetail, ShareMember, UserDetail
-
+from share.models import ShareGroup, ShareGroupDetail, ShareMember, UserDetail, ShareStats
+import uuid
 paris_tz = zoneinfo.ZoneInfo(settings.TIME_ZONE)
 
 
@@ -33,23 +33,24 @@ class ShareConsumer(AsyncWebsocketConsumer):
 
     # Receive message from WebSocket
     async def receive(self, text_data):
-        # TODO 施工中
         json_data = json.loads(text_data)
-        if json_data['type'] == 'members':
-            data = await self.get_members(json_data)
-            await self.send(text_data=json.dumps({'type': 'members', 'data': data}, ensure_ascii=False))
-
-        elif json_data['type'] == 'table':
-            data = await self.get_table(json_data)
-            await self.send(text_data=json.dumps({'type': 'table', 'data': data}, ensure_ascii=False))
-        else:
+        if json_data.get('is_group', False):
             await self.channel_layer.group_send(
                 self.room_group_name,
                 {
                     'type': json_data['type'],
                     'message': json_data
-                }
-            )
+                })
+        else:
+            await self.channel_layer.send(self.channel_name,
+                {
+                    'type': json_data['type'],
+                    'message': json_data
+                })
+
+    async def members(self, json_data):
+        data = await self.get_members(json_data)
+        await self.send(text_data=json.dumps({'type': 'members', 'data': data}, ensure_ascii=False))
 
     @sync_to_async
     def get_members(self, json_data):
@@ -68,6 +69,10 @@ class ShareConsumer(AsyncWebsocketConsumer):
 
             data[sharemember.id] = user_data
         return data
+
+    async def table(self, json_data):
+        data = await self.get_table(json_data)
+        await self.send(text_data=json.dumps({'type': 'table', 'data': data}, ensure_ascii=False))
 
     @sync_to_async
     def get_table(self, json_data):
@@ -91,6 +96,24 @@ class ShareConsumer(AsyncWebsocketConsumer):
             }
             result.append(receipt_data)
         return result
-    
+
+    async def price_of_member(self, json_data):
+        data = await self.get_price_of_member(json_data)
+        await self.send(text_data=json.dumps({'type': 'price_of_member', 'data': data}, ensure_ascii=False))
+
+    @sync_to_async
+    def get_price_of_member(self, json_data):
+        share_stats = ShareStats.objects.filter(share_group_detail__token=uuid.UUID(self.room_name))
+        result = []
+        for share_stat in share_stats:
+            share_stat:ShareStats
+            result.append({
+                'out_member': share_stat.out_member.id,
+                'in_member': share_stat.in_member.id,
+                'price': share_stat.price,
+                'id': share_stat.id
+            })
+        return result
+
     async def update_group_table(self, json_data):
         await self.send(text_data=json.dumps(json_data, ensure_ascii=False))
