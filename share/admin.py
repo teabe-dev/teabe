@@ -38,7 +38,7 @@ class UserDetailAdmin(admin.ModelAdmin):
 
 @admin.register(models.ShareStats)
 class ShareStatsAdmin(admin.ModelAdmin):
-    list_display = ('out_user', 'in_user', 'price')
-    search_fields = ['out_user']  # 搜尋條件
-    raw_id_fields = ('out_user', 'in_user',)
+    list_display = ('share_group_detail', 'out_member', 'in_member', 'price')
+    search_fields = ['share_group_detail', 'out_member']  # 搜尋條件
+    raw_id_fields = ('share_group_detail', 'out_member', 'in_member',)
 

@@ -12,6 +12,7 @@ urlpatterns = [
     re_path(r'modal_group_join/(\S+)/$', views.ModalGroupJoin.as_view()),
     re_path(r'modal_group_admin/(\S+)/$', views.ModalGroupAdmin.as_view()),
     re_path(r'modal_group_add_item/(\S+)/(\S+)/$', views.ModalGroupAddItam.as_view()),
+    re_path(r'modal_group_send_price/(\S+)/(\S+)/$', views.ModalGroupSendPrice.as_view()),
 
     re_path(r'modal_add_item/(\S+)/$', views.ModalAddItam.as_view()),
 ]

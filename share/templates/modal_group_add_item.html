@@ -17,6 +17,19 @@
         <div class="mb-3">
             <label for="original_price" class="form-label">金額：</label>
             <input type="number" class="form-control" id="original_price" name="original_price" placeholder="0" value="{{ groupDetail.original_price }}">
+            <p class="text-danger">●請輸入收信金額 ●若用優質請自行將價格x0.95</p>
+        </div>
+
+        <div class="mb-3">
+            <label for="price_options" class="form-label">計算方式：
+            </label>
+            <button type="button" class="btn btn-outline-info btn-sm" onclick="money_hint()">
+            提示
+            </button>
+            <select class="form-select" id="price_options" name="price_options">
+                <option value="1">無扣除手續費</option>
+                <option value="2">扣除手續費</option>
+            </select>
         </div>
 
         <div class="mb-3" id="share_members_html">
@@ -26,10 +39,10 @@
             <div class="row">
                 {% if groupDetail.getting_time %}
                 <div class="col">
-                    <input type="date" class="form-control" name="create_date" placeholder="" value="{{ groupDetail.getting_time | date:'Y-m-d' }}" required>
+                    <input type="date" class="form-control" name="create_date" placeholder="" value="{{ groupDetail.getting_time | date:'Y-m-d' }}" required disabled>
                 </div>
                 <div class="col">
-                    <input type="time" class="form-control" name="create_time" placeholder="" value="{{ groupDetail.getting_time | time:'H:i' }}" required>
+                    <input type="time" class="form-control" name="create_time" placeholder="" value="{{ groupDetail.getting_time | time:'H:i' }}" required disabled>
                 </div>
                 {% else %}
                 <div class="col">
@@ -43,7 +56,7 @@
         </div>
     </div>
     <div class="modal-footer">
-        {% if userDetail %}
+        {% if groupDetail %}
         <button type="button" class="btn btn-danger" onclick="del()">刪除</button>
         {% endif %}
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
@@ -80,29 +93,30 @@ $(document).ready(function () {
 
     }
     $('#get_member_html').html(`
-            <label for="get_member" class="col-sm-2 col-form-label">得寶人：</label>
-            <select class="form-select" size="3" id="get_member" name="get_member" required>
+            <label for="get_member" class="form-label">取得成員：</label>
+            <select class="form-select" size="3" id="get_member" name="get_member" required {% if groupDetail %}disabled{% endif %}>
             ${get_member_html}
             </select>
     `)
 
     $('#share_members_html').html(`
-            <label for="formGroupExampleInput" class="form-label">分寶對象：</label>
+            <label for="formGroupExampleInput" class="form-label">平分成員：</label>
             <div class="row">
                 ${share_members_html}
             </div>
         `)
-
-
-
-        // {{ share_members }}
 
         if ("{{ groupDetail.get_member.id }}"){
             $("#get_member").val("{{ groupDetail.get_member.id }}")
         } else {
             $("#get_member").val("{{ share_self.id }}")
         }
-        
+
+        if ("{{ groupDetail.extra.price_options }}"){
+            $("#price_options").val("{{ groupDetail.extra.price_options }}")
+        } else {
+            $("#price_options").val("2")
+        }
 
         member_objs = $("input[name=share_members]")
 
@@ -133,24 +147,11 @@ $(document).ready(function () {
             type: 'post',
             url: '{{ request.path }}',
             data: $('#modal_form').serialize(),
-            // success: function (res) {
-            //     // 修改表格
-            //     if (res['message'] === '新增成功'){
-            //         var table = $('#myTable').DataTable();
-            //         table.row.add(res['receipt_data']).draw();
-            //     } else if (res['message'] === '更新成功') {
-            //         var table = $('#myTable').DataTable();
-
-            //         var rows = table.rows(function(idx, data, node) {
-            //             return data.id === res['receipt_data']['id'];
-            //         });
-            //         table.row(rows.indexes().toArray()[0]).remove().draw();
-
-            //         table.row.add(res['receipt_data']).draw();
-            //     }
-            //     alert(res['message']);
-            //     $('#exampleModal').modal('hide')
-            // }
+            success: function (res) {
+                // 修改表格
+                alert(res['message']);
+                $('#exampleModal').modal('hide')
+            }
         });
     });
 
@@ -161,19 +162,23 @@ $(document).ready(function () {
             url: '{{ request.path }}',
             data: $('#modal_form').serialize() + '&del=',
             success: function (res) {
-                // 修改表格
-                var table = $('#myTable').DataTable();
-                var rows = table.rows(function(idx, data, node) {
-                    return data.id === res['receipt_data']['id'];
-                    });
-                table.row(rows.indexes().toArray()[0]).remove().draw();
-
                 alert(res['message']);
                 $('#exampleModal').modal('hide')
             }
         });
         }
     }
-
-
+    function money_hint(){
+        alert(`
+1. 無扣除手續費
+    (適用於借貸)
+2. 扣除手續費
+    計算如下 A 為輸入金額
+    B = (A/0.95)*0.01
+    B 大於 10W 為 10W (掛板費)
+    C = (A - B)*0.98/人數
+    計算寄信1H+平分人數 為 平分金額
+    最後再無條件捨去取整數`)
+    }
+    
 </script>
