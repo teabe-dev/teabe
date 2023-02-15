@@ -20,7 +20,7 @@
 
     </div>
     <div class="modal-footer">
-        {% if share_member %}
+        {% if share_member and share_member.member_type == 12 %}
         <button type="button" class="btn btn-danger" onclick="del()">取消申請</button>
         {% endif %}
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>

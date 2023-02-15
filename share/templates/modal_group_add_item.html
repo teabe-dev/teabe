@@ -76,11 +76,12 @@ $(document).ready(function () {
         // 新資料的話 預先填自己 + 上一筆的 分寶對象結果
         // 舊資料 回填資料
 
-        get_member_html += `<option value="${key}">
+        if (value.member_type != 12 && value.member_type != 40){
+            get_member_html += `<option value="${key}">
             ${value.nick_name}
             </option>`
 
-        share_members_html += `
+            share_members_html += `
             <div class="col-auto user-select-none">
                 <input class="form-check-input" type="checkbox" name="share_members"
                     id="share_members_${key}" value="${key}">
@@ -90,7 +91,7 @@ $(document).ready(function () {
                 </label>
             </div>
         `
-
+        }
     }
     $('#get_member_html').html(`
             <label for="get_member" class="form-label">取得成員：</label>

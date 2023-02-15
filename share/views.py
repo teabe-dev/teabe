@@ -254,6 +254,12 @@ class ModalGroupMembers(TemplateView):
                     continue
                 group_member.member_type = value
 
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(shareMember.share_group.token.hex, {
+            "type": "members", "is_group": True})
+        async_to_sync(channel_layer.group_send)(shareMember.share_group.token.hex, {
+            "type": "price_of_member", "is_group": True})
+
         ShareMember.objects.bulk_update(group_member_dict.values(), fields=['nick_name', 'member_type'])
         return JsonResponse({'message': '變更成功'})
 

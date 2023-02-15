@@ -52,18 +52,18 @@
 
 {% if not share_self.member_type and share_group.is_apply %}
 <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#exampleModal"
-    onclick="set_modal_content('modal_group_join/{{ share_group.token }}')">
+    onclick="set_modal_content('modal_group_join/{{ share_group.token.hex }}')">
     申請加入
 </button>
 {% elif share_self.member_type == 12 %}
 <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#exampleModal"
-    onclick="set_modal_content('modal_group_join/{{ share_group.token }}')">
+    onclick="set_modal_content('modal_group_join/{{ share_group.token.hex }}')">
     申請修改
 </button>
 權限變更後請重新整理頁面
 {% elif share_self.member_type >= 21 and share_self.member_type <= 23 %}
 <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#exampleModal"
-    onclick="set_modal_content('modal_group_join/{{ share_group.token }}')">
+    onclick="set_modal_content('modal_group_join/{{ share_group.token.hex }}')">
     更新會員資料
 </button>
 {% endif %}
@@ -141,10 +141,12 @@
         <td>${d.update_time} ${d.set_member}</td>
         </tr>
 
+        {% if is_edit %}
         <tr>
         <td>操作：</td>
         <td><button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#exampleModal" onclick="modify_modal_table(${d.id})">修改</button></td>
         </tr>
+        {% endif %}
 
         </table>`
     );
@@ -248,7 +250,6 @@
                 member_html_part = '<div class="accordion-item">'
 
                 if (key === '{{ share_self.id }}'){
-                    console.log('---------')
                     aria_expanded = true
                     aria_show = 'show'
                     text_success = 'text-success'
@@ -277,8 +278,7 @@
                         member_html_part_1 += `
                         <tr>
                             <td class="text-center">${members[member.in_member].nick_name}</td>
-                            <td class="text-end" data-bs-toggle="modal" data-bs-target="#exampleModal" onclick="set_modal_content('modal_group_send_price/{{ share_group.id }}/${member.id}')">
-
+                            <td class="text-end" {% if is_edit %} data-bs-toggle="modal" data-bs-target="#exampleModal" onclick="set_modal_content('modal_group_send_price/{{ share_group.id }}/${member.id}')" {% endif %}>
                                 <a class="link-primary user-select-none">${member.price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</a>
                                 </td>
                             <td class="text-end"></td>
