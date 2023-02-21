@@ -1,6 +1,8 @@
 from django import forms
 from django.core.files.images import get_image_dimensions
 
+from django.db.models.fields.files import ImageFieldFile
+
 from user.models import UserProfile
 
 
@@ -20,6 +22,9 @@ class UserProfileForm(forms.ModelForm):
                 raise forms.ValidationError(u'圖片解析度請小於 %s x %s' % (max_width, max_height))
 
             #validate content type
+            if type(avatar) == ImageFieldFile:
+                raise forms.ValidationError(u'請使用 JPEG, GIF, PNG 圖片格式')
+
             main, sub = avatar.content_type.split('/')
             if not (main == 'image' and sub in ['jpeg', 'pjpeg', 'gif', 'png']):
                 raise forms.ValidationError(u'請使用 JPEG, GIF, PNG 圖片格式')
