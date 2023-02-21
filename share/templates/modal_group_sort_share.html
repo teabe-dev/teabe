@@ -1,0 +1,111 @@
+<div class="modal-header">
+    <h1 class="modal-title fs-5" id="exampleModalLabel">重新分配</h1>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+<form id="modal_form">
+    <div class="modal-body">
+        {% csrf_token %}
+        <div id="sort_share_member"></div>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+        <input type="submit" class="btn btn-primary" id="form" value="儲存">
+    </div>
+</form>
+
+<script>
+    $(document).ready( function () {
+        data = '{{ result | safe }}'
+        result_data = JSON.parse(data);
+
+        var data_jaon = sessionStorage.getItem("members");
+        members = JSON.parse(data_jaon).data;
+
+        html_part = ``
+        for ([key, value] of Object.entries(members)) {
+            member_html_part = '<div class="accordion-item">'
+
+            member_html_part_1 = ''
+            maney = 0
+            for (var i = 0; i < result_data.length; i++) {
+                member = result_data[i]
+                if (member.in_member === Number(key) && member.price > 0){
+                    // 收錢的是自己
+                    member_html_part_1 += `
+                    <tr>
+                        <td class="text-center">${members[member.out_member].nick_name}</td>
+                        <td class="text-end"></td>
+                        <td class="text-end">${member.price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</td>
+                    </tr>
+                    `
+                    maney += member.price
+                } 
+                else if (member.out_member === Number(key) && member.price > 0) {
+                    member_html_part_1 += `
+                    <tr>
+                        <td class="text-center">${members[member.in_member].nick_name}</td>
+                        <td class="text-end">${member.price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</td>
+                        <td class="text-end"></td>
+                    </tr>
+                    `
+                    maney -= member.price
+                }
+            }
+            total_maney_html = ''
+            if (maney){
+                total_maney_html = `<span class="badge rounded-pill bg-light text-dark ">  ${maney.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}  </span>`
+            }
+            member_html_part += `
+            <h2 class="accordion-header mb-0" id="modal_heading_${key}">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#modal_collapse_${key}" aria-controls="modal_collapse_${key}">
+                    ${value.nick_name}
+                    ${total_maney_html}
+                </button>
+            </h2>
+
+            <div id="modal_collapse_${key}"
+                class="accordion-collapse collapse"
+                aria-labelledby="modal_heading_${key}" data-bs-parent="#accordionExample">
+                <div class="accordion-body">
+                    <table class="table table-hover" style="width: 100%;">
+                        <thead>
+                            <tr>
+                                <th class="text-center">暱稱</th>
+                                <th class="text-end">發送金額</th>
+                                <th class="text-end">收到金額</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `
+
+            member_html_part += member_html_part_1
+            member_html_part += '</tbody></table></div></div></div>'
+            if (maney != 0){
+                html_part += member_html_part
+            }
+        }
+
+        html_data = `
+        <div class="accordion" id="accordionExample">
+            ${html_part}
+        </div>
+        `
+
+        $("#sort_share_member").html(html_data)
+    })
+
+    document.querySelector('form').addEventListener('submit', function (event) {
+        event.preventDefault();
+        $.ajax({
+            type: 'post',
+            url: '{{ request.path }}',
+            data: $('#modal_form').serialize(),
+            success: function (res) {
+                alert(res['message']);
+                $('#exampleModal').modal('hide')
+            }
+        });
+    });
+
+</script>

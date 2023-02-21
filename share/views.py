@@ -4,6 +4,7 @@ import zoneinfo
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.conf import settings
+from django.db.models import Count, F, Sum
 from django.forms import formset_factory, modelformset_factory
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import render
@@ -16,6 +17,7 @@ from share.enums import MemberRole
 from share.forms import GroupCreateForm, csrfForm
 from share.models import (ShareGroup, ShareGroupDetail, ShareGroupHistory,
                           ShareMember, ShareStats, UserDetail)
+import json
 
 paris_tz = zoneinfo.ZoneInfo(settings.TIME_ZONE)
 # Create your views here.
@@ -683,4 +685,108 @@ class ModalGroupSendPrice(TemplateView):
             "type": "price_of_member", "is_group": True})
         return JsonResponse({'message': '新增成功'})
 
+
+class ModalGroupSortShare(TemplateView):
+    def get(self, request, group_id):
+        form = csrfForm()
+        data = {'form': form,}
+
+        share_self = ShareMember.objects.get(share_group__id=int(group_id), user=request.user)
+        if share_self.member_type not in [MemberRole.OWNER, MemberRole.ADMIN, MemberRole.MEMBER]:
+            return render(request, 'modal_group_error.html', {'message': '參數錯誤'})
+
+        result = self.sort_share(share_group=share_self.share_group)
+        json_result = json.dumps(result, ensure_ascii=False)
+        data['result'] = json_result
+
+        return render(request, 'modal_group_sort_share.html', data)
+
+    def post(self, request, group_id):
+        form = csrfForm(request.POST)
+        if form.is_valid() == False:
+            return JsonResponse({'message': '表單已失效，請重新整理。'})
+
+        share_self = ShareMember.objects.get(share_group__id=int(group_id), user=request.user)
+        if share_self.member_type not in [MemberRole.OWNER, MemberRole.ADMIN, MemberRole.MEMBER]:
+            return JsonResponse({'message': '參數錯誤'})
+
+        result = self.sort_share(share_group=share_self.share_group)
+
+        share_stats = ShareStats.objects.filter(share_group_detail=share_self.share_group)
+        stat_dict = {}
+        for share_stat in share_stats:
+            share_stat.price = 0
+            stat_dict[(share_stat.out_member.id, share_stat.in_member.id)] = share_stat
+
+        for share_dict in result:
+            stat_dict[(share_dict['out_member'], share_dict['in_member'])].price = share_dict['price']
+            stat_dict[(share_dict['in_member'], share_dict['out_member'])].price = share_dict['price']*-1
+
+        ShareStats.objects.bulk_update(stat_dict.values(), fields=['price'])
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(share_self.share_group.token.hex, {
+            "type": "price_of_member", "is_group": True})
+        return JsonResponse({'message': '重新分配成功'})
+
+
+    def sort_share(self, share_group):
+        share_stats = ShareStats.objects.filter(share_group_detail=share_group, price__gt=0).order_by('-price')
+        send_price = []
+        receive_price = []
+
+        tidy_dict = {} # 資料整理
+        for share_stat in share_stats:
+            if share_stat.out_member.id in tidy_dict:
+                tidy_dict[share_stat.out_member.id] -= share_stat.price
+            else:
+                tidy_dict[share_stat.out_member.id] = share_stat.price*-1
+
+            if share_stat.in_member.id in tidy_dict:
+                tidy_dict[share_stat.in_member.id] += share_stat.price
+            else:
+                tidy_dict[share_stat.in_member.id] = share_stat.price
+
+        # 區分正負
+        for key, value in tidy_dict.items():
+            if value > 0:
+                receive_price.append([key, value])
+            elif value < 0:
+                send_price.append([key, abs(value)])
+
+        # 排序
+        send_price = sorted(send_price, key = lambda s: s[1])
+        receive_price = sorted(receive_price, key = lambda s: s[1])
+
+        # 分配
+        result = []
+        for send_item in range(len(send_price)):
+            send_member = send_price[send_item][0]
+            send_money = send_price[send_item][1]
+            for receive_item in range(len(receive_price)):
+                receive_member = receive_price[receive_item][0]
+                receive_money = receive_price[receive_item][1]
+                if receive_money == 0:
+                    pass
+                elif send_money >= receive_money:
+                    send_money -= receive_money
+                    send_price[send_item][1] = send_money
+                    receive_price[receive_item][1] = 0
+
+                    result.append({
+                        'out_member': send_member,
+                        'in_member': receive_member,
+                        'price': receive_money,
+                    })
+
+                elif send_money < receive_money:
+                    receive_money -= send_money
+                    receive_price[receive_item][1] = receive_money
+                    send_price[send_item][1] = 0
+                    result.append([send_member, receive_member, send_money])
+                    result.append({
+                        'out_member': send_member,
+                        'in_member': receive_member,
+                        'price': send_money,
+                    })
+        return result
 
