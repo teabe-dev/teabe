@@ -19,3 +19,4 @@ nginx-certbot.env
 uwsgi.sock
 nginx.conf
 redis.conf
+docker-compose.yml

@@ -120,7 +120,7 @@
     if (Protocol === 'https') {
         var wsSecure = 'wss'
     }
-    const chatSocket = new WebSocket(`${wsSecure}://{{ request.get_host }}/share/{{ share_group.token.hex }}/`);
+    const chatSocket = new WebSocket(`${wsSecure}://{{ request.get_host }}/ws/share/{{ share_group.token.hex }}/`);
 
     var columns = [
         {
