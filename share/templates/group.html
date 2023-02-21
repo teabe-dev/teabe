@@ -52,18 +52,18 @@
 
 {% if not share_self.member_type and share_group.is_apply %}
 <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#exampleModal"
-    onclick="set_modal_content('modal_group_join/{{ share_group.token }}')">
+    onclick="set_modal_content('modal_group_join/{{ share_group.token.hex }}')">
     申請加入
 </button>
 {% elif share_self.member_type == 12 %}
 <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#exampleModal"
-    onclick="set_modal_content('modal_group_join/{{ share_group.token }}')">
+    onclick="set_modal_content('modal_group_join/{{ share_group.token.hex }}')">
     申請修改
 </button>
 權限變更後請重新整理頁面
 {% elif share_self.member_type >= 21 and share_self.member_type <= 23 %}
 <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#exampleModal"
-    onclick="set_modal_content('modal_group_join/{{ share_group.token }}')">
+    onclick="set_modal_content('modal_group_join/{{ share_group.token.hex }}')">
     更新會員資料
 </button>
 {% endif %}
@@ -94,7 +94,22 @@
 <p>最多顯示近1000筆資料，平分金額是計算後(手續費)的結果</p>
 <hr class="style-gradual">
 
-<h2>結算</h2>
+
+<div class="row">
+    <div class="col">
+    <h2 >結算</h2>
+    </div>
+    <div class="col text-end">
+    {% if is_edit %}
+    <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#exampleModal"
+        onclick="set_modal_content('modal_group_sort_share/{{ share_group.id }}')">
+        重新分配
+    </button>
+    {% endif %}
+    </div>
+</div>
+
+
 <div id="share_member"></div>
 <br><br><br><br>
 
@@ -141,10 +156,12 @@
         <td>${d.update_time} ${d.set_member}</td>
         </tr>
 
+        {% if is_edit %}
         <tr>
         <td>操作：</td>
         <td><button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#exampleModal" onclick="modify_modal_table(${d.id})">修改</button></td>
         </tr>
+        {% endif %}
 
         </table>`
     );
@@ -239,7 +256,6 @@
             }
         }
         else if (data['type'] == 'price_of_member') {
-            console.log(data['data'])
             var data_jaon = sessionStorage.getItem("members");
             const members = JSON.parse(data_jaon).data;
 
@@ -248,7 +264,6 @@
                 member_html_part = '<div class="accordion-item">'
 
                 if (key === '{{ share_self.id }}'){
-                    console.log('---------')
                     aria_expanded = true
                     aria_show = 'show'
                     text_success = 'text-success'
@@ -277,8 +292,7 @@
                         member_html_part_1 += `
                         <tr>
                             <td class="text-center">${members[member.in_member].nick_name}</td>
-                            <td class="text-end" data-bs-toggle="modal" data-bs-target="#exampleModal" onclick="set_modal_content('modal_group_send_price/{{ share_group.id }}/${member.id}')">
-
+                            <td class="text-end" {% if is_edit %} data-bs-toggle="modal" data-bs-target="#exampleModal" onclick="set_modal_content('modal_group_send_price/{{ share_group.id }}/${member.id}')" {% endif %}>
                                 <a class="link-primary user-select-none">${member.price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</a>
                                 </td>
                             <td class="text-end"></td>
@@ -314,8 +328,8 @@
                             <thead>
                                 <tr>
                                     <th class="text-center">暱稱</th>
-                                    <th class="text-end">發送金額<span class="badge rounded-pill bg-primary">稅後</span></th>
-                                    <th class="text-end">收到金額<span class="badge rounded-pill bg-primary">稅後</span></th>
+                                    <th class="text-end">發送金額</th>
+                                    <th class="text-end">收到金額</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -323,7 +337,9 @@
 
                 member_html_part += member_html_part_1
                 member_html_part += '</tbody></table></div></div></div>'
-                html_part += member_html_part
+                if (maney != 0){
+                    html_part += member_html_part
+                }
             }
 
             html_data = `
@@ -332,8 +348,6 @@
             </div>
             `
             $("#share_member").html(html_data)
-
-
         }
     };
 

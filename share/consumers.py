@@ -56,18 +56,20 @@ class ShareConsumer(AsyncWebsocketConsumer):
     def get_members(self, json_data):
         share_group = ShareGroup.objects.get(token=self.room_name)
         data = {}
-        for sharemember in share_group.sharemember_set.all():
+        for share_member in share_group.sharemember_set.all():
+            share_member:ShareMember
             user_data = {
-                'nick_name': sharemember.nick_name,
-                'introduce': sharemember.introduce
+                'nick_name': share_member.nick_name,
+                'introduce': share_member.introduce,
+                'member_type': share_member.member_type
             }
 
-            if sharemember.user.userprofile.avatar:
-                user_data['avatar'] = sharemember.user.userprofile.avatar.url
+            if share_member.user.userprofile.avatar:
+                user_data['avatar'] = share_member.user.userprofile.avatar.url
             else:
-                user_data['avatar'] = f'https://secure.gravatar.com/avatar/{sharemember.user.userprofile.user_token.hex}?s=30&d=identicon'
+                user_data['avatar'] = f'https://secure.gravatar.com/avatar/{share_member.user.userprofile.user_token.hex}?s=30&d=identicon'
 
-            data[sharemember.id] = user_data
+            data[share_member.id] = user_data
         return data
 
     async def table(self, json_data):
