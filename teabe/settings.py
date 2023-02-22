@@ -188,3 +188,49 @@ try:
     from local_settings import *
 except ImportError:
     pass
+
+
+if not os.path.exists('logs'):
+    os.makedirs('logs')
+
+LOG_LEVEL = 'INFO'
+if DEBUG == True:
+    LOG_LEVEL = 'DEBUG'
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'normal': {
+            'format': '%(asctime)s %(levelname)s %(name)s: %(message)s'
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'normal',
+        },
+        'file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': 'logs/main.log',
+            'maxBytes': 1024*1024*10,
+            'backupCount': 10,
+            'formatter': 'normal',
+        }
+
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+        },
+        'user': {
+            'handlers': ['console', 'file'],
+            'level': LOG_LEVEL,
+        },
+        'share': {
+            'handlers': ['console', 'file'],
+            'level': LOG_LEVEL,
+        },
+    },
+}

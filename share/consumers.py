@@ -1,4 +1,6 @@
 import json
+import logging
+import uuid
 import zoneinfo
 
 from asgiref.sync import sync_to_async
@@ -6,8 +8,11 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.layers import get_channel_layer
 from django.conf import settings
 
-from share.models import ShareGroup, ShareGroupDetail, ShareMember, UserDetail, ShareStats
-import uuid
+from share.models import (ShareGroup, ShareGroupDetail, ShareMember,
+                          ShareStats, UserDetail)
+
+logger = logging.getLogger(__name__)
+
 paris_tz = zoneinfo.ZoneInfo(settings.TIME_ZONE)
 
 
