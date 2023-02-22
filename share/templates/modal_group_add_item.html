@@ -11,7 +11,9 @@
 
         <div class="mb-3">
             <label for="item" class="form-label">項目：</label>
-            <input type="text" class="form-control" id="item" name="item" placeholder="米列希安們" value="{{ groupDetail.item }}" required>
+            <input type="text" class="form-control" id="item" list="itemOptions" name="item" placeholder="米列希安們" value="{{ groupDetail.item }}" required>
+            <datalist id="itemOptions">
+            </datalist>
         </div>
 
         <div class="mb-3">
@@ -66,8 +68,21 @@
 
 <script>
 $(document).ready(function () {
-    var data = sessionStorage.getItem("members");
-    const members = JSON.parse(data);
+    var membersJson = sessionStorage.getItem("members");
+    const members = JSON.parse(membersJson);
+
+    var itemArrayJson = sessionStorage.getItem("itemArray");
+    itemArray = JSON.parse(itemArrayJson);
+
+
+    itemArrayHtml = ''
+    for (var i = 0; i < itemArray.length; i++) {
+        itemArrayHtml += `<option value="${itemArray[i]}">`
+            }
+    $("#itemOptions").html(itemArrayHtml)
+
+
+
     get_member_html = ''
     share_members_html = ''
 

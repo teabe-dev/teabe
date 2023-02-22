@@ -234,6 +234,14 @@
                     tr.addClass('shown');
                 }
             });
+
+            // 獲取新增分寶的項目
+            itemSet = new Set();
+            for (var i = 0; i < data['data'].length; i++) {
+                itemSet.add(data['data'][i]['item'])
+            }
+            itemArray = Array.from(itemSet)
+            sessionStorage.setItem("itemArray", JSON.stringify(itemArray))
         } 
         else if (data['type'] == 'update_group_table') {
             var result = data['data']['data']
