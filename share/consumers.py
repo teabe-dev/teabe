@@ -97,6 +97,7 @@ class ShareConsumer(AsyncWebsocketConsumer):
                 'share_members': list(groupDetail.share_members.values_list("id", flat=True)),
                 "original_price": groupDetail.original_price,
                 "share_price": groupDetail.share_price,
+                "price_options": int(groupDetail.extra.get('price_options', 2)),
                 'getting_time': groupDetail.getting_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d %H:%M'),
                 'update_time': groupDetail.update_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d'),
                 'create_time': groupDetail.create_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d'),
