@@ -747,15 +747,21 @@ class ModalGroupSortShare(TemplateView):
             stat_dict[(share_stat.out_member.id, share_stat.in_member.id)] = share_stat
 
         for share_dict in result:
-            stat_dict[(share_dict['out_member'], share_dict['in_member'])].price = share_dict['price']
-            stat_dict[(share_dict['in_member'], share_dict['out_member'])].price = share_dict['price']*-1
+            plus = (share_dict['out_member'], share_dict['in_member'])
+            if plus not in stat_dict:
+                stat_dict[plus] = ShareStats.objects.create(share_group_detail=share_self.share_group, in_member__id=plus[0], out_member__id=plus[1])
+            stat_dict[plus].price = share_dict['price']
+
+            minus = (share_dict['in_member'], share_dict['out_member'])
+            if minus not in stat_dict:
+                stat_dict[minus] = ShareStats.objects.create(share_group_detail=share_self.share_group, in_member__id=minus[0], out_member__id=minus[1])
+            stat_dict[minus].price = share_dict['price']*-1
 
         ShareStats.objects.bulk_update(stat_dict.values(), fields=['price'])
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(share_self.share_group.token.hex, {
             "type": "price_of_member", "is_group": True})
         return JsonResponse({'message': '重新分配成功'})
-
 
     def sort_share(self, share_group):
         share_stats = ShareStats.objects.filter(share_group_detail=share_group, price__gt=0).order_by('-price')
