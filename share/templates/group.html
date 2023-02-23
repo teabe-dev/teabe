@@ -50,7 +50,10 @@
     onclick="text_to_copy('https://{{ request.get_host }}{{ request.path }}')" title="無法複製請直接複製網址">點擊複製分寶(邀請)連結</button>
 {% endif %}
 
-{% if not share_self.member_type and share_group.is_apply %}
+{% if request.user.is_anonymous %}
+<a href="/accounts/login/?next={{ request.path }}" class="link-primary"><h3>點此登入</h3></a>
+
+{% elif not share_self.member_type and share_group.is_apply %}
 <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#exampleModal"
     onclick="set_modal_content('modal_group_join/{{ share_group.token.hex }}')">
     申請加入

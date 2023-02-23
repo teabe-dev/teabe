@@ -153,15 +153,18 @@ class GroupCreate(TemplateView):
 
 class Group(TemplateView):
     def get(self, request, token):
-        if request.user.is_anonymous:
-            return HttpResponseRedirect(f'/accounts/login/?next={request.path}')
+        context = {}
+        share_options = None
+        if request.user.is_anonymous == False:
+            share_options_set = ShareMember.objects.filter(user=request.user, member_type__lt=40)
+            if share_options_set.exists():
+                share_options = share_options_set
 
-        share_options = ShareMember.objects.filter(user=request.user, member_type__lt=40)
-        context = {
-            'share_options': share_options
-        }
+        context['share_options'] = share_options
+
         if len(token) != 32:
-            return render(request, 'group.html', context)
+            context['message'] = '非正確連結'
+            return render(request, 'group_error.html', context)
 
         share_group = ShareGroup.objects.filter(token=token)
         if share_group.exists() == False:
@@ -169,22 +172,22 @@ class Group(TemplateView):
             return render(request, 'group_error.html', context)
 
         context['share_group'] = share_group[0]
-        share_self = share_options.filter(share_group=share_group[0])
         is_edit = False
-        if share_self.exists():
-            if share_self[0].member_type in [MemberRole.OWNER, MemberRole.ADMIN, MemberRole.MEMBER]:
-                is_edit = True
-            elif share_self[0].member_type == MemberRole.AUDIT and share_group[0].is_viewable == False:
-                context['message'] = '管理者審核中'
-                return render(request, 'group_error.html', context)
+        if share_options:
+            share_self = share_options.filter(share_group=share_group[0])
+            if share_self.exists():
+                if share_self[0].member_type in [MemberRole.OWNER, MemberRole.ADMIN, MemberRole.MEMBER]:
+                    is_edit = True
+                    context['share_self'] = share_self[0]
+                elif share_self[0].member_type == MemberRole.AUDIT and share_group[0].is_viewable == False:
+                    context['message'] = '管理者審核中'
+                    return render(request, 'group_error.html', context)
 
         elif share_group[0].is_viewable == False:
             context['message'] = '連結已失效或分寶群未公開'
             return render(request, 'group_error.html', context)
-        if share_self:
-            context['share_self'] = share_self[0]
+
         context['is_edit'] = is_edit
-        # 要分 參觀模式跟 編輯模式
         return render(request, 'group.html', context)
 
 class ModalGroupMembers(TemplateView):
