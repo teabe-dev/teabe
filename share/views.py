@@ -151,6 +151,7 @@ class GroupCreate(TemplateView):
         share_options = ShareMember.objects.filter(user=request.user, member_type__lt=40)
         return render(request, 'group_create.html', {'form': form, 'share_options': share_options})
 
+
 class Group(TemplateView):
     def get(self, request, token):
         context = {}
@@ -189,6 +190,7 @@ class Group(TemplateView):
 
         context['is_edit'] = is_edit
         return render(request, 'group.html', context)
+
 
 class ModalGroupMembers(TemplateView):
     def get(self, request, member_id):
@@ -268,6 +270,7 @@ class ModalGroupMembers(TemplateView):
         ShareMember.objects.bulk_update(group_member_dict.values(), fields=['nick_name', 'member_type'])
         return JsonResponse({'message': '變更成功'})
 
+
 class ModalGroupJoin(TemplateView):
     def get(self, request, token):
         form = csrfForm()
@@ -319,6 +322,7 @@ class ModalGroupJoin(TemplateView):
             share_member.save()
             return JsonResponse({'message': '更改成功'})
         return JsonResponse({'message': '申請失敗'})
+
 
 class ModalGroupAdmin(TemplateView):
     def get(self, request, member_id):
@@ -456,6 +460,7 @@ class ModalGroupAddItam(TemplateView):
                 share_group_detail=groupDetail.share_group, 
                 getting_time=groupDetail.getting_time,
                 get_member=get_member,
+                set_member=set_member,
                 before_members=ShareMember.objects.none(), 
                 after_members=share_members, 
                 before_price=0,
@@ -482,6 +487,7 @@ class ModalGroupAddItam(TemplateView):
                     share_group_detail=groupDetail.share_group, 
                     getting_time=groupDetail.getting_time,
                     get_member=groupDetail.get_member,
+                    set_member=set_member,
                     before_members=groupDetail.share_members.all(), 
                     after_members=ShareMember.objects.none(), 
                     before_price=groupDetail.share_price,
@@ -504,6 +510,7 @@ class ModalGroupAddItam(TemplateView):
                 share_group_detail=groupDetail.share_group, 
                 getting_time=groupDetail.getting_time,
                 get_member=groupDetail.get_member,
+                set_member=set_member,
                 before_members=groupDetail.share_members.all(), 
                 after_members=share_members, 
                 before_price=groupDetail.share_price, 
@@ -538,6 +545,7 @@ def get_output_json(groupDetail:ShareGroupDetail):
         'share_members': list(groupDetail.share_members.values_list("id", flat=True)),
         "original_price": groupDetail.original_price,
         "share_price": groupDetail.share_price,
+        "price_options": int(groupDetail.extra.get('price_options', 2)),
         'getting_time': groupDetail.getting_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d %H:%M'),
         'update_time': groupDetail.update_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d'),
         'create_time': groupDetail.create_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d'),
@@ -547,11 +555,27 @@ def get_output_json(groupDetail:ShareGroupDetail):
 def distribute_money(item, 
                     share_group_detail, 
                     getting_time, 
-                    get_member, 
+                    get_member:ShareMember, 
+                    set_member:ShareMember,
                     before_members, 
                     after_members, 
                     before_price:int, 
                     after_price:int):
+    '''
+    前有 後沒有 >> 刪除
+    1. 取得之前金額 新增個人資訊
+
+    前沒有 後有 >> 新增
+    1. 取得之後金額 新增個人資訊
+
+    前有 後有 >> 修改
+    1. 取得相差金額 新增個人資訊
+    '''
+
+    if set(before_members) == set(after_members) and before_price == after_price:
+        # 無變化
+        return
+
     detail_data = []
 
     share_stats = ShareStats.objects.filter(share_group_detail=share_group_detail)
@@ -569,7 +593,7 @@ def distribute_money(item,
                 item=item,
                 price=before_price*-1,
                 share_group_detail=share_group_detail,
-                remark=f'移除項目',
+                remark=f'{set_member.nick_name} 移除項目',
                 getting_time=getting_time,
             ))
             set_money(share_group_detail, share_stat_dict, get_member, member, before_price*-1)
@@ -578,7 +602,7 @@ def distribute_money(item,
 
     # 之前沒有 之後有的
     diff_after = after_members.exclude(pk__in=before_members)
-    if after_price:
+    if after_price: # 初次新增
         for member in diff_after:
             member:ShareMember
             detail_data.append(UserDetail(
@@ -586,31 +610,32 @@ def distribute_money(item,
                 item=item,
                 price=after_price,
                 share_group_detail=share_group_detail,
+                remark=f'{set_member.nick_name} 新增項目',
                 getting_time=getting_time,
             ))
             set_money(share_group_detail, share_stat_dict, get_member, member, after_price)
             set_money(share_group_detail, share_stat_dict, member, get_member, after_price*-1)
-
 
     # 之前和之後都有的
     intersection = before_members & after_members
     if intersection:
         remark = ''
         if (before_price == 0 and after_price > 0) == False:
-            remark='修改項目'
+            remark=f'{set_member.nick_name} 修改項目'
 
-        for member in intersection:
-            member:ShareMember
-            detail_data.append(UserDetail(
-                user=member.user,
-                item=item,
-                price=after_price-before_price,
-                share_group_detail=share_group_detail,
-                remark=remark,
-                getting_time=getting_time,
-            ))
-            set_money(share_group_detail, share_stat_dict, get_member, member, after_price-before_price)
-            set_money(share_group_detail, share_stat_dict, member, get_member, (after_price-before_price)*-1)
+        if before_price != after_price:
+            for member in intersection:
+                member:ShareMember
+                detail_data.append(UserDetail(
+                    user=member.user,
+                    item=item,
+                    price=after_price-before_price,
+                    share_group_detail=share_group_detail,
+                    remark=remark,
+                    getting_time=getting_time,
+                ))
+                set_money(share_group_detail, share_stat_dict, get_member, member, after_price-before_price)
+                set_money(share_group_detail, share_stat_dict, member, get_member, (after_price-before_price)*-1)
 
     ShareStats.objects.bulk_update(share_stat_dict.values(), fields=['out_member', 'in_member', 'price'])
     UserDetail.objects.bulk_create(detail_data)
@@ -672,10 +697,11 @@ class ModalGroupSendPrice(TemplateView):
             share_group_detail=groupDetail.share_group, 
             getting_time=groupDetail.getting_time,
             get_member=groupDetail.get_member,
+            set_member=share_self,
             before_members=ShareMember.objects.none(), 
             after_members=groupDetail.share_members.all(), 
             before_price=0,
-            after_price=groupDetail.share_price
+            after_price=groupDetail.share_price,
             )
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(share_group.token.hex, {
@@ -687,7 +713,6 @@ class ModalGroupSendPrice(TemplateView):
         async_to_sync(channel_layer.group_send)(share_group.token.hex, {
             "type": "price_of_member", "is_group": True})
         return JsonResponse({'message': '新增成功'})
-
 
 class ModalGroupSortShare(TemplateView):
     def get(self, request, group_id):
