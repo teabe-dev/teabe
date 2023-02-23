@@ -13,9 +13,11 @@ from django.dispatch import receiver
 
 class Index(TemplateView):
     def get(self, request):
+        # 因為首頁沒東西，所以直接轉跳
+        return HttpResponseRedirect('/share/information/')
         # if request.user.is_anonymous:
         #     return HttpResponseRedirect('/accounts/login/')
-        return render(request, 'base.html')
+        # return render(request, 'base.html')
 
 class AvatarChange(TemplateView):
     def get(self, request):

@@ -413,7 +413,7 @@ class ModalGroupAddItam(TemplateView):
         post_data:dict = request.POST.dict()
         share_members_list = list(map(int, dict(request.POST).get('share_members', [])))
 
-        price_options = post_data.get('price_options', '')
+        price_options = int(post_data.get('price_options', 2))
 
         share_group=ShareGroup.objects.get(id=int(group_id))
         set_member = share_group.sharemember_set.get(user=request.user)
@@ -424,7 +424,7 @@ class ModalGroupAddItam(TemplateView):
         share_members_num = len(share_members)
         share_price = 0
         if original_price:
-            if price_options == '1':
+            if price_options == 1:
                 share_price = int(original_price/share_members_num)
             else:
                 price = int(original_price/0.95)
