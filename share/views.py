@@ -749,12 +749,12 @@ class ModalGroupSortShare(TemplateView):
         for share_dict in result:
             plus = (share_dict['out_member'], share_dict['in_member'])
             if plus not in stat_dict:
-                stat_dict[plus] = ShareStats.objects.create(share_group_detail=share_self.share_group, in_member__id=plus[0], out_member__id=plus[1])
+                stat_dict[plus] = ShareStats.objects.create(share_group_detail=share_self.share_group, in_member_id=plus[0], out_member_id=plus[1])
             stat_dict[plus].price = share_dict['price']
 
             minus = (share_dict['in_member'], share_dict['out_member'])
             if minus not in stat_dict:
-                stat_dict[minus] = ShareStats.objects.create(share_group_detail=share_self.share_group, in_member__id=minus[0], out_member__id=minus[1])
+                stat_dict[minus] = ShareStats.objects.create(share_group_detail=share_self.share_group, in_member_id=minus[0], out_member_id=minus[1])
             stat_dict[minus].price = share_dict['price']*-1
 
         ShareStats.objects.bulk_update(stat_dict.values(), fields=['price'])
@@ -805,7 +805,6 @@ class ModalGroupSortShare(TemplateView):
                     send_money -= receive_money
                     send_price[send_item][1] = send_money
                     receive_price[receive_item][1] = 0
-
                     result.append({
                         'out_member': send_member,
                         'in_member': receive_member,
@@ -816,7 +815,6 @@ class ModalGroupSortShare(TemplateView):
                     receive_money -= send_money
                     receive_price[receive_item][1] = receive_money
                     send_price[send_item][1] = 0
-                    result.append([send_member, receive_member, send_money])
                     result.append({
                         'out_member': send_member,
                         'in_member': receive_member,
