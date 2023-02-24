@@ -1,3 +1,5 @@
+import json
+import logging
 import uuid
 import zoneinfo
 
@@ -17,7 +19,8 @@ from share.enums import MemberRole
 from share.forms import GroupCreateForm, csrfForm
 from share.models import (ShareGroup, ShareGroupDetail, ShareGroupHistory,
                           ShareMember, ShareStats, UserDetail)
-import json
+
+logger = logging.getLogger(__name__)
 
 paris_tz = zoneinfo.ZoneInfo(settings.TIME_ZONE)
 # Create your views here.
@@ -790,7 +793,6 @@ class ModalGroupSortShare(TemplateView):
         # 排序
         send_price = sorted(send_price, key = lambda s: s[1])
         receive_price = sorted(receive_price, key = lambda s: s[1])
-
         # 分配
         result = []
         for send_item in range(len(send_price)):
@@ -799,9 +801,10 @@ class ModalGroupSortShare(TemplateView):
             for receive_item in range(len(receive_price)):
                 receive_member = receive_price[receive_item][0]
                 receive_money = receive_price[receive_item][1]
-                if receive_money == 0:
+                if receive_money == 0 or send_money == 0:
                     pass
                 elif send_money >= receive_money:
+                    # 發送的金額大於接收的金額
                     send_money -= receive_money
                     send_price[send_item][1] = send_money
                     receive_price[receive_item][1] = 0
@@ -812,6 +815,7 @@ class ModalGroupSortShare(TemplateView):
                     })
 
                 elif send_money < receive_money:
+                    # 接收的金額大於發送的金額
                     receive_money -= send_money
                     receive_price[receive_item][1] = receive_money
                     send_price[send_item][1] = 0
@@ -820,5 +824,6 @@ class ModalGroupSortShare(TemplateView):
                         'in_member': receive_member,
                         'price': send_money,
                     })
+                    break
         return result
 
