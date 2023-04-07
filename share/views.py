@@ -1,20 +1,24 @@
 import json
 import logging
+import os
 import uuid
 import zoneinfo
 
+import pandas as pd
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.conf import settings
-from django.db.models import Count, F, Sum
+from django.db.models import Count, ExpressionWrapper, F, IntegerField, Sum
 from django.forms import formset_factory, modelformset_factory
-from django.http import HttpResponseRedirect, JsonResponse
+from django.http import (Http404, HttpResponse, HttpResponseRedirect,
+                         JsonResponse)
 from django.shortcuts import render
 from django.template import RequestContext
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.views.generic import TemplateView, View
 
+from common.base import calculate_debts
 from share.enums import MemberRole
 from share.forms import GroupCreateForm, csrfForm
 from share.models import (ShareGroup, ShareGroupDetail, ShareGroupHistory,
@@ -768,8 +772,6 @@ class ModalGroupSortShare(TemplateView):
 
     def sort_share(self, share_group):
         share_stats = ShareStats.objects.filter(share_group_detail=share_group, price__gt=0).order_by('-price')
-        send_price = []
-        receive_price = []
 
         tidy_dict = {} # 資料整理
         for share_stat in share_stats:
@@ -783,47 +785,127 @@ class ModalGroupSortShare(TemplateView):
             else:
                 tidy_dict[share_stat.in_member.id] = share_stat.price
 
-        # 區分正負
-        for key, value in tidy_dict.items():
-            if value > 0:
-                receive_price.append([key, value])
-            elif value < 0:
-                send_price.append([key, abs(value)])
-
-        # 排序
-        send_price = sorted(send_price, key = lambda s: s[1])
-        receive_price = sorted(receive_price, key = lambda s: s[1])
-        # 分配
         result = []
-        for send_item in range(len(send_price)):
-            send_member = send_price[send_item][0]
-            send_money = send_price[send_item][1]
-            for receive_item in range(len(receive_price)):
-                receive_member = receive_price[receive_item][0]
-                receive_money = receive_price[receive_item][1]
-                if receive_money == 0 or send_money == 0:
-                    pass
-                elif send_money >= receive_money:
-                    # 發送的金額大於接收的金額
-                    send_money -= receive_money
-                    send_price[send_item][1] = send_money
-                    receive_price[receive_item][1] = 0
-                    result.append({
-                        'out_member': send_member,
-                        'in_member': receive_member,
-                        'price': receive_money,
-                    })
-
-                elif send_money < receive_money:
-                    # 接收的金額大於發送的金額
-                    receive_money -= send_money
-                    receive_price[receive_item][1] = receive_money
-                    send_price[send_item][1] = 0
-                    result.append({
-                        'out_member': send_member,
-                        'in_member': receive_member,
-                        'price': send_money,
-                    })
-                    break
+        for calculate_debt in calculate_debts(tidy_dict):
+            result.append({
+                'out_member': calculate_debt[0],
+                'in_member': calculate_debt[1],
+                'price': calculate_debt[2],
+            })
         return result
 
+
+
+class recalculateShare(TemplateView):
+    def get(self, request, group_id):
+        form = csrfForm()
+
+        share_self = ShareMember.objects.get(share_group__id=int(group_id), user=request.user)
+        if share_self.member_type not in [MemberRole.OWNER, MemberRole.ADMIN, MemberRole.MEMBER]:
+            return render(request, 'modal_group_error.html', {'message': '參數錯誤'})
+
+        selected_share_group_details = ShareGroupDetail.objects.filter(share_group=share_self.share_group)
+        share_member_prices = selected_share_group_details.values('share_members').annotate(total_price=Sum('share_price'))
+        share_group_details = selected_share_group_details.values('get_member').annotate(total_price=ExpressionWrapper(Count('share_members')*F('share_price'), output_field=IntegerField()))
+
+        total_price_dict = {}
+        for d in list(share_member_prices):
+            total_price_dict[d['share_members']] = d['total_price']
+
+        for d in list(share_group_details):
+            if d['get_member'] not in total_price_dict:
+                total_price_dict[d['get_member']] = -d['total_price']
+            else:
+                total_price_dict[d['get_member']] -= d['total_price']
+
+        result = []
+        for calculate_debt in calculate_debts(total_price_dict):
+            result.append({
+                'out_member': calculate_debt[0],
+                'in_member': calculate_debt[1],
+                'price': calculate_debt[2],
+            })
+
+        share_stats = ShareStats.objects.filter(share_group_detail=share_self.share_group)
+        stat_dict = {}
+        for share_stat in share_stats:
+            share_stat.price = 0
+            stat_dict[(share_stat.out_member.id, share_stat.in_member.id)] = share_stat
+
+        for share_dict in result:
+            plus = (share_dict['out_member'], share_dict['in_member'])
+            if plus not in stat_dict:
+                stat_dict[plus] = ShareStats.objects.create(share_group_detail=share_self.share_group, in_member_id=plus[0], out_member_id=plus[1])
+            stat_dict[plus].price = share_dict['price']
+
+            minus = (share_dict['in_member'], share_dict['out_member'])
+            if minus not in stat_dict:
+                stat_dict[minus] = ShareStats.objects.create(share_group_detail=share_self.share_group, in_member_id=minus[0], out_member_id=minus[1])
+            stat_dict[minus].price = share_dict['price']*-1
+
+        ShareStats.objects.bulk_update(stat_dict.values(), fields=['price'])
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(share_self.share_group.token.hex, {
+            "type": "price_of_member", "is_group": True})
+        return JsonResponse({'message': '重新分配成功'})
+
+
+class DownloadExcelToGroupDetail(TemplateView):
+    def get(self, request, member_id):
+        shareMembers = ShareMember.objects.filter(id=int(member_id))
+        if shareMembers.exists() == False:
+            raise Http404
+        shareMember = shareMembers[0]
+
+        group_detail = shareMember.share_group.sharegroupdetail_set.all()
+
+        result = []
+        for groupDetail in group_detail:
+            groupDetail:ShareGroupDetail
+            receipt_data = {
+                'get_member': groupDetail.get_member.nick_name,
+                'set_member': groupDetail.set_member.nick_name,
+                'item': groupDetail.item,
+                'share_members': ",".join(list(groupDetail.share_members.values_list("nick_name", flat=True))),
+                "original_price": groupDetail.original_price,
+                "share_price": groupDetail.share_price,
+                "price_options": int(groupDetail.extra.get('price_options', 2)),
+                'getting_time': groupDetail.getting_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d %H:%M'),
+                'update_time': groupDetail.update_time.astimezone(tz=paris_tz).strftime('%Y/%m/%d'),
+            }
+            result.append(receipt_data)
+
+        pd.DataFrame(result).to_excel(f'media/{member_id}.xlsx', index=False)
+        with open(f'media/{member_id}.xlsx', 'rb') as excel:
+            data = excel.read()
+        os.remove(f'media/{member_id}.xlsx')
+
+        response = HttpResponse(data, content_type='application/vnd.ms-excel')
+        response['Content-Disposition'] = f'attachment; filename="detail.xlsx"'
+        return response
+
+
+class DownloadExcelToShareStats(TemplateView):
+    def get(self, request, member_id):
+        shareMembers = ShareMember.objects.filter(id=int(member_id))
+        if shareMembers.exists() == False:
+            raise Http404
+        shareMember = shareMembers[0]
+
+        share_stats = ShareStats.objects.filter(share_group_detail=shareMember.share_group, price__gt=0, )
+        result = []
+        for share_stat in share_stats:
+            share_stat:ShareStats
+            result.append({
+                'out_member': share_stat.out_member.nick_name,
+                'in_member': share_stat.in_member.nick_name,
+                'price': share_stat.price,
+            })
+        pd.DataFrame(result).to_excel(f'media/{member_id}.xlsx', index=False)
+        with open(f'media/{member_id}.xlsx', 'rb') as excel:
+            data = excel.read()
+        os.remove(f'media/{member_id}.xlsx')
+
+        response = HttpResponse(data, content_type='application/vnd.ms-excel')
+        response['Content-Disposition'] = 'attachment; filename="receipt.xlsx"'
+        return response

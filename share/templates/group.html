@@ -44,7 +44,7 @@
 {% if share_self.member_type >= 21 and share_self.member_type <= 23 %}
 <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#exampleModal"
     onclick="set_modal_content('modal_group_members/{{ share_self.id }}')">
-    顯示所有成員
+    成員管理
 </button>
 <button type="button" class="btn btn-outline-primary"
     onclick="text_to_copy('https://{{ request.get_host }}{{ request.path }}')" title="無法複製請直接複製網址">點擊複製分寶(邀請)連結</button>
@@ -81,6 +81,21 @@
 {% endif %}
 <br><br>
 {% csrf_token %}
+
+<div class="row">
+    <div class="col">
+    <h2>明細表</h2>
+    </div>
+    <div class="col text-end">
+    {% if is_edit %}
+    <a type="button" class="btn btn-outline-primary" href="/share/download_detail_excel/{{ share_self.id }}">匯出excel</a>
+    <!-- <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#exampleModal"
+        onclick="set_modal_content('')">
+        載入excel
+    </button> -->
+    {% endif %}
+    </div>
+</div>
 <table id="myTable" class="display" style="width:100%">
     <thead>
         <tr>
@@ -108,13 +123,17 @@
         onclick="set_modal_content('modal_group_sort_share/{{ share_group.id }}')">
         重新分配
     </button>
+    <button type="button" class="btn btn-outline-primary"
+        onclick="recalculate_alert('/share/recalculate_share/{{ share_group.id }}')">
+        重新計算
+    </button>
+    <a type="button" class="btn btn-outline-primary" href="/share/download_stats_excel/{{ share_self.id }}">匯出excel</a>
     {% endif %}
     </div>
 </div>
 
 
 <div id="share_member"></div>
-
 <br>
 <hr class="style-gradual">
 <div>
@@ -448,6 +467,14 @@
                 }
             }
         });
+    }
+
+
+    function recalculate_alert(url) {
+        if (confirm('確定要重新計算嗎？')){
+            $.get(`${url}`, function (data) {
+            alert(data.message)
+        })}
     }
 
 </script>
