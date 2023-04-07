@@ -15,6 +15,13 @@ urlpatterns = [
     re_path(r'modal_group_send_price/(\S+)/(\S+)/$', views.ModalGroupSendPrice.as_view()),
     re_path(r'modal_group_sort_share/(\S+)/$', views.ModalGroupSortShare.as_view()),
 
+    re_path(r'download_detail_excel/(\S+)/$', views.DownloadExcelToGroupDetail.as_view()),
+    re_path(r'download_stats_excel/(\S+)/$', views.DownloadExcelToShareStats.as_view()),
+    
+    re_path(r'recalculate_share/(\S+)/$', views.recalculateShare.as_view()),
+
+    
+
     re_path(r'modal_add_item/(\S+)/$', views.ModalAddItam.as_view()),
 ]
 
