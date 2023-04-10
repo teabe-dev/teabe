@@ -434,9 +434,11 @@
 
         var paid_money_dict = {}
         var got_money_dict = {}
+        var count_dict = {}
         for (const [key, value] of Object.entries(members)) {
             paid_money_dict[value.nick_name] = 0
             got_money_dict[key] = 0
+            count_dict[key] = 0
         }
 
         for (var i = 0; i < data.length; i++) {
@@ -445,6 +447,7 @@
 
                 data[i].share_members.forEach((share_member, _) => {
                     got_money_dict[share_member] += data[i].share_price
+                    count_dict[share_member] += 1
                 });
             }
         }
@@ -463,28 +466,55 @@
             got_money_list.push(value)
         }
 
+        count_labels = []
+        count_list = []
+        for (const [key, value] of Object.entries(count_dict)) {
+            count_labels.push(members[key].nick_name)
+            count_list.push(value)
+        }
+
         const ctx = document.getElementById('myChart');
 
         myChart = new Chart(ctx, {
-            type: 'bar',
+            type: 'line',
+
             data: {
                 labels: paid_money_labels,
                 datasets: [{
-                label: '血袋',
-                data: data_list,
-                borderWidth: 1
+                    label: '血袋',
+                    data: data_list,
+                    yAxisID: 'y',
+                    borderWidth: 1,
+                    type: 'bar'
                 },{
-                labels: got_money_labels,
-                label: '吸血鬼',
-                data: got_money_list,
-                borderWidth: 1
+                    labels: got_money_labels,
+                    label: '吸血鬼',
+                    data: got_money_list,
+                    yAxisID: 'y',
+                    borderWidth: 1,
+                    type: 'bar'
+                },{
+                    labels: count_labels,
+                    label: '狩獵次數',
+                    data: count_list,
+                    yAxisID: 'y1',
+                    stack: 'combined',
+                    type: 'line',
                 }
             ]
             },
             options: {
                 scales: {
                 y: {
-                    beginAtZero: true
+                    type: 'linear',
+                    position: 'left'
+                }, 
+                y1:{
+                    type: 'linear',
+                    position: 'right',
+                    grid: {
+                        drawOnChartArea: false, // only want the grid lines for one axis to show up
+                    },
                 }
                 }
             }
