@@ -432,32 +432,27 @@
         var data_jaon = sessionStorage.getItem("members");
         const members = JSON.parse(data_jaon).data;
 
-        var my_dict = {}
+        var paid_money_dict = {}
         var got_money_dict = {}
+        for (const [key, value] of Object.entries(members)) {
+            paid_money_dict[value.nick_name] = 0
+            got_money_dict[key] = 0
+        }
+
         for (var i = 0; i < data.length; i++) {
             if (data[i].price_options === 2) {
-                if ( data[i].get_member in my_dict === false){
-                    my_dict[data[i].get_member] = 0
-                } 
-                my_dict[data[i].get_member] += data[i].share_price * data[i].share_members.length
+                paid_money_dict[data[i].get_member] += data[i].share_price * data[i].share_members.length
 
                 data[i].share_members.forEach((share_member, _) => {
-                    if ( share_member in got_money_dict === false){
-                        got_money_dict[share_member] = 0
-                    } 
                     got_money_dict[share_member] += data[i].share_price
                 });
-                for (const share_member in data[i].share_members) {
-                    console.log(share_member)
-                }
             }
         }
 
-
-        labels_list = []
+        paid_money_labels = []
         data_list = []
-        for (const [key, value] of Object.entries(my_dict)) {
-            labels_list.push(key)
+        for (const [key, value] of Object.entries(paid_money_dict)) {
+            paid_money_labels.push(key)
             data_list.push(value)
         }
 
@@ -468,13 +463,12 @@
             got_money_list.push(value)
         }
 
-
         const ctx = document.getElementById('myChart');
 
         myChart = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: labels_list,
+                labels: paid_money_labels,
                 datasets: [{
                 label: '血袋',
                 data: data_list,
@@ -496,7 +490,6 @@
             }
         });
     }
-
 
     function recalculate_alert(url) {
         if (confirm('確定要重新計算嗎？')){
