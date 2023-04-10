@@ -6,6 +6,18 @@
     <div class="modal-body">
         {% csrf_token %}
 
+        <table id="memberTable" class="display" style="width:100%">
+            <thead>
+                <tr>
+                    <th>帳號</th>
+                    <th>分寶群暱稱</th>
+                    <th>權限</th>
+                    <th>刪除</th>
+                </tr>
+            </thead>
+        </table>
+        <br><br><br><br>
+
         <div class="row">
             <div class="col-sm-3">
                 <label class="form-label">帳號</label>

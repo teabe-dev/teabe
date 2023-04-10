@@ -429,38 +429,22 @@
 
 
     function change_Chart (data) {
-        var data_jaon = sessionStorage.getItem("members");
-        const members = JSON.parse(data_jaon).data;
-
-        var paid_money_dict = {}
-        var got_money_dict = {}
-        for (const [key, value] of Object.entries(members)) {
-            paid_money_dict[value.nick_name] = 0
-            got_money_dict[key] = 0
-        }
-
+        var my_dict = {}
         for (var i = 0; i < data.length; i++) {
             if (data[i].price_options === 2) {
-                paid_money_dict[data[i].get_member] += data[i].share_price * data[i].share_members.length
-
-                data[i].share_members.forEach((share_member, _) => {
-                    got_money_dict[share_member] += data[i].share_price
-                });
+                if ( data[i].get_member in my_dict ){
+                    my_dict[data[i].get_member] += data[i].share_price * data[i].share_members.length
+                } else {
+                    my_dict[data[i].get_member] = data[i].share_price * data[i].share_members.length
+                }
             }
+            
         }
-
-        paid_money_labels = []
+        labels_list = []
         data_list = []
-        for (const [key, value] of Object.entries(paid_money_dict)) {
-            paid_money_labels.push(key)
+        for (const [key, value] of Object.entries(my_dict)) {
+            labels_list.push(key)
             data_list.push(value)
-        }
-
-        got_money_labels = []
-        got_money_list = []
-        for (const [key, value] of Object.entries(got_money_dict)) {
-            got_money_labels.push(members[key].nick_name)
-            got_money_list.push(value)
         }
 
         const ctx = document.getElementById('myChart');
@@ -468,18 +452,12 @@
         myChart = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: paid_money_labels,
+                labels: labels_list,
                 datasets: [{
-                label: '血袋',
+                label: '貢獻血量',
                 data: data_list,
                 borderWidth: 1
-                },{
-                labels: got_money_labels,
-                label: '吸血鬼',
-                data: got_money_list,
-                borderWidth: 1
-                }
-            ]
+                }]
             },
             options: {
                 scales: {
@@ -490,6 +468,7 @@
             }
         });
     }
+
 
     function recalculate_alert(url) {
         if (confirm('確定要重新計算嗎？')){
