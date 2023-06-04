@@ -46,7 +46,12 @@ services:
       - "15672:15672"
 
   web:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - USER_ID=${USER_ID}
+        - GROUP_ID=${GROUP_ID}
     container_name: teabe_django
     command:
       - sh
