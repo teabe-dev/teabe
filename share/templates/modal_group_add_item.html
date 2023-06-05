@@ -81,8 +81,6 @@ $(document).ready(function () {
             }
     $("#itemOptions").html(itemArrayHtml)
 
-
-
     get_member_html = ''
     share_members_html = ''
 
@@ -116,7 +114,7 @@ $(document).ready(function () {
     `)
 
     $('#share_members_html').html(`
-            <label for="formGroupExampleInput" class="form-label">平分成員：</label>
+            <label for="formGroupExampleInput" class="form-label">平分成員：(已選取<label id='share_member_num'></label>人)</label>
             <div class="row">
                 ${share_members_html}
             </div>
@@ -138,10 +136,14 @@ $(document).ready(function () {
 
         share_members = JSON.parse('{{ share_members }}')
 
+        share_member_num = 0
+
         if (share_members.length == 0){
+            // 第一筆資料
             for (var i = 0; i < member_objs.length; i++) {
                 if (member_objs[i].value == "{{ share_self.id }}") {
                     $(member_objs[i]).prop('checked', true)
+                    share_member_num += 1
                 } else {
                     $(member_objs[i]).prop('checked', false)
                 }
@@ -150,12 +152,20 @@ $(document).ready(function () {
             for (var i = 0; i < member_objs.length; i++) {
                 if (share_members.includes(Number(member_objs[i].value))) {
                     $(member_objs[i]).prop('checked', true)
+                    share_member_num += 1
                 } else {
                     $(member_objs[i]).prop('checked', false)
                 }
             }
         }
-});
+        $("#share_member_num").html(share_member_num)
+
+        $("input[name=share_members]").click(function() {
+            // 計算點擊share_members數量
+            var checkedCount = $("input[name=share_members]:checked").length;
+            $("#share_member_num").html(checkedCount)
+        });
+    });
 
     document.querySelector('form').addEventListener('submit', function (event) {
         event.preventDefault();
